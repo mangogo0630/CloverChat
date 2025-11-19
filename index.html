@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>幸運草</title>
+
+    <!-- Theme Initializer Script -->
+    <!-- 這段程式碼會在頁面渲染前執行，以避免主題閃爍 -->
+    <script>
+        (function() {
+            try {
+                const theme = localStorage.getItem('theme');
+                if (theme) {
+                    const classList = document.documentElement.classList;
+                    if (theme === 'dark') classList.add('dark-mode');
+                    else if (theme === 'a') classList.add('theme-a');
+                    else if (theme === 'b') classList.add('theme-b');
+                }
+            } catch (e) {
+                console.error('Failed to apply initial theme:', e);
+            }
+        })();
+    </script>
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <!-- PWA Theme Color -->
+    <meta name="theme-color" content="#89CFF0">
+    <!-- 分頁圖示 (Favicon) -->
+    <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/ha810505ha/ttt/main/pic/milkteashop.png">
+    <!-- 手機主畫面圖示 (Apple Touch Icon) -->
+    <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/ha810505ha/ttt/main/pic/milkteashop.png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.5/purify.min.js"></script>
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- ==================== 左側導覽面板 ==================== -->
+        <aside id="left-panel" class="left-panel">
+            <div class="panel-view-container">
+                <!-- 角色列表視圖 -->
+                <div id="character-view" class="panel-view active">
+                    <header class="panel-header">
+                        <h2>角色列表</h2>
+                        <div class="header-actions">
+                            <button id="global-settings-btn" class="icon-btn" title="全域設定"><i class="fa-solid fa-gear"></i></button>
+                        </div>
+                    </header>
+                    <ul id="character-list" class="character-list"></ul>
+                    <button id="add-character-btn" class="add-character-btn">
+                        <i class="fa-solid fa-plus"></i> 新增角色
+                    </button>
+                </div>
+                <!-- 聊天室列表視圖 -->
+                <div id="chat-session-view" class="panel-view">
+                    <header class="panel-header">
+                        <button id="back-to-chars-btn" class="icon-btn" title="返回角色列表"><i class="fa-solid fa-arrow-left"></i></button>
+                        <div class="chat-list-header-title">
+                            <button id="header-love-char-btn" class="icon-btn-sm" title="喜愛/取消喜愛">
+                                <i class="fa-regular fa-heart"></i>
+                            </button>
+                            <h2 id="chat-list-header-name"></h2>
+                        </div>
+                        <div class="header-actions">
+                            <button id="edit-active-character-btn" class="icon-btn" title="編輯角色"><i class="fa-solid fa-pencil"></i></button>
+                            <button id="delete-active-character-btn" class="icon-btn" title="刪除角色"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </header>
+                    <ul id="chat-session-list" class="chat-session-list"></ul>
+                    <button id="add-chat-btn" class="add-character-btn">
+                        <i class="fa-solid fa-plus"></i> 開啟新聊天
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ==================== 右側主聊天面板 ==================== -->
+        <main class="chat-panel">
+             <button id="menu-toggle-btn" class="icon-btn menu-toggle-btn"><i class="fa-solid fa-bars"></i></button>
+            <!-- 初始歡迎畫面 -->
+            <div id="welcome-screen" class="welcome-screen">
+                <i class="fa-solid fa-comments"></i>
+                <h2>歡迎使用「幸運草」</h2>
+                <p>請從左側選擇一個角色開始對話，或新增一個新角色。</p>
+            </div>
+
+            <!-- 聊天介面 (預設隱藏) -->
+            <div id="chat-interface" class="chat-interface hidden">
+                <header class="chat-header">
+                    <div class="char-info">
+                        <img id="chat-header-avatar" src="" alt="頭像" class="chat-avatar-sm">
+                        <div class="char-info-details">
+                           <div class="chat-header-name-container">
+                               <h2 id="chat-header-name"></h2>
+                               <span id="chat-header-model-name"></span>
+                           </div>
+                           <input type="text" id="chat-notes-input" class="chat-notes-input" placeholder="新增備註...">
+                        </div>
+                    </div>
+                    <div class="chat-actions">
+                        <div class="persona-selector-container">
+                            <i class="fa-solid fa-user"></i>
+                            <select id="chat-user-persona-select"></select>
+                        </div>
+                        <div class="chat-options-container">
+                            <button id="chat-options-btn" class="icon-btn" title="更多選項">
+                                <i class="fa-solid fa-ellipsis-vertical"></i>
+                            </button>
+                            <div id="chat-options-menu" class="dropdown-menu hidden">
+                                <button id="import-chat-option-btn"><i class="fa-solid fa-file-import"></i> 匯入聊天紀錄</button>
+                                <button id="export-chat-option-btn"><i class="fa-solid fa-file-export"></i> 匯出聊天紀錄</button>
+                                <button id="delete-chat-option-btn" class="danger"><i class="fa-solid fa-trash-can"></i> 刪除聊天室</button>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
+                <div id="chat-window" class="chat-window">
+                    <!-- 聊天訊息會顯示在這裡 -->
+                </div>
+
+                <div class="input-area">
+                    <div class="input-actions">
+                         <button id="view-memory-btn" class="action-btn-sm">查看/編輯記憶</button>
+                         <button id="update-memory-btn" class="action-btn-sm">更新記憶</button>
+                    </div>
+                    <div class="message-input-container">
+                        <textarea id="message-input" placeholder="在這裡輸入訊息..." rows="1"></textarea>
+                        <button id="send-btn" data-state="send">
+                            <i id="send-icon" class="fa-solid fa-paper-plane"></i>
+                            <i id="continue-icon" class="fa-solid fa-arrow-right hidden"></i>
+                            <i id="regenerate-icon" class="fa-solid fa-rotate-right hidden"></i>
+                            <i id="stop-icon" class="fa-solid fa-square hidden"></i>
+                        </button>
+                    </div>
+                    <div id="screenshot-toolbar" class="screenshot-toolbar hidden">
+                        <button id="cancel-screenshot-btn" class="action-btn secondary">取消</button>
+                        <span id="screenshot-info-text">已選擇 0 則訊息</span>
+                        <button id="generate-screenshot-btn" class="action-btn primary">生成圖片</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+        <div id="mobile-overlay" class="mobile-overlay hidden"></div>
+    </div>
+
+    <!-- ==================== 彈出視窗 (Modals) ==================== -->
+
+    <div id="rename-chat-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2>重新命名對話</h2>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="rename-chat-input">新的對話名稱</label>
+                    <input type="text" id="rename-chat-input" placeholder="請輸入新的對話名稱">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancel-rename-chat-btn" class="action-btn secondary">取消</button>
+                <button id="save-rename-chat-btn" class="action-btn primary">儲存</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="character-editor-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2 id="character-editor-title">新增角色</h2>
+            <div class="modal-body">
+                <label for="char-avatar-upload" class="avatar-upload-label">
+                    <div class="avatar-preview-container">
+                        <img id="char-avatar-preview" src="https://placehold.co/100x100/EFEFEF/AAAAAA?text=頭像" alt="角色頭像預覽" class="avatar-preview">
+                        <div class="avatar-upload-overlay"><i class="fa-solid fa-camera"></i></div>
+                    </div>
+                </label>
+                <input type="file" id="char-avatar-upload" class="avatar-upload-input" accept="image/*">
+                
+                <div class="form-group">
+                    <label for="char-name">角色名稱</label>
+                    <input type="text" id="char-name" placeholder="角色名稱">
+                </div>
+                <div class="form-group">
+                    <label for="char-description">角色描述 (性格、背景)</label>
+                    <textarea id="char-description" placeholder="角色描述 (性格、背景)"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>第一句話 (開場白)</label>
+                    <div id="first-message-list" class="first-message-container">
+                    </div>
+                    <button id="add-first-message-btn" class="action-btn-sm" style="margin-top: 10px;">
+                        <i class="fa-solid fa-plus"></i> 新增開場白
+                    </button>
+                </div>
+
+                 <div class="form-group">
+                    <label for="char-example-dialogue">對話範例</label>
+                    <textarea id="char-example-dialogue" placeholder="格式: {{user}}: 你好\n{{char}}: 你好呀"></textarea>
+                </div>
+                
+                 <!-- Advanced Metadata Section -->
+                <div class="advanced-section">
+                    <div class="advanced-section-header">
+                        <h4>
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                            進階定義 
+                        </h4>
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </div>
+                    <div class="advanced-section-content">
+                        <div class="form-group">
+                            <label for="char-scenario">場景 (Scenario)</label>
+                            <textarea id="char-scenario" placeholder="描述對話開始時的背景、環境與事件"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="char-creator">創作者</label>
+                            <input type="text" id="char-creator" placeholder="創作者名稱">
+                        </div>
+                        <div class="form-group">
+                            <label for="char-version">角色版本</label>
+                            <input type="text" id="char-version" placeholder="例如：1.0.0">
+                        </div>
+                        <div class="form-group">
+                            <label for="char-creator-notes">創作者備註</label>
+                            <textarea id="char-creator-notes" placeholder="備註不會影響 AI 回應"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-actions-split">
+                    <button id="import-char-btn" class="action-btn"><i class="fa-solid fa-upload"></i> 匯入</button>
+                    <button id="export-char-btn" class="action-btn"><i class="fa-solid fa-download"></i> 匯出</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancel-char-editor-btn" class="action-btn secondary">取消</button>
+                <button id="save-char-btn" class="action-btn primary">儲存</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="global-settings-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2>全域設定</h2>
+            <div id="settings-tabs-container" class="settings-tabs">
+                <button class="tab-btn active" data-tab="account-tab"><i class="fa-solid fa-user-circle"></i> 帳號</button>
+                <button class="tab-btn" data-tab="api-settings-tab"><i class="fa-solid fa-key"></i> API 設定</button>
+                <button class="tab-btn" data-tab="user-settings-tab"><i class="fa-solid fa-users"></i> 使用者設定</button>
+                <button class="tab-btn" data-tab="prompt-settings-tab"><i class="fa-solid fa-book-bookmark"></i> 提示詞庫</button>
+                <button class="tab-btn" data-tab="lorebook-tab"><i class="fa-solid fa-book"></i> 世界書</button>
+                <button class="tab-btn" data-tab="regex-tab"><i class="fa-solid fa-wand-magic-sparkles"></i> 正規表達式</button>
+                <button class="tab-btn" data-tab="theme-settings-tab"><i class="fa-solid fa-palette"></i> 主題設定</button>
+                <button class="tab-btn" data-tab="about-tab"><i class="fa-solid fa-info-circle"></i> 關於</button>
+                <button class="tab-btn" data-tab="data-management-tab"><i class="fa-solid fa-database"></i> 資料管理</button>
+            </div>
+            <div class="modal-body">
+                <!-- 帳號分頁 -->
+                <div id="account-tab" class="tab-content active">
+                    <div id="login-prompt">
+                        <h3>帳號</h3>
+                        <p>登入帳號以使用免費模型。</p>
+                        <button id="login-btn-in-settings" class="action-btn primary full-width">
+                            <i class="fa-solid fa-user"></i> 登入
+                        </button>
+                    </div>
+                    <div id="user-info-details" class="hidden">
+                        <div class="user-info-header">
+                            <img id="user-avatar-in-settings" src="" alt="User Avatar">
+                            <span id="user-name-in-settings"></span>
+                        </div>
+                        <button id="logout-btn" class="action-btn danger full-width">登出</button>
+                    </div>
+                </div>
+                <!-- API 設定分頁 -->
+                <div id="api-settings-tab" class="tab-content">
+                    <div class="api-preset-manager">
+                        <h4>API 設定檔</h4>
+                        <div class="preset-controls">
+                            <select id="api-preset-select">
+                                <option value="">選擇要載入的設定檔...</option>
+                            </select>
+                            <button id="delete-api-preset-btn" class="icon-btn-sm danger" title="刪除選取的設定檔"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                        <button id="save-api-preset-btn" class="action-btn-sm"><i class="fa-solid fa-save"></i> 儲存目前設定為新設定檔</button>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="api-provider">API 供應商</label>
+                        <select id="api-provider">
+                            <option value="official_gemini">測試模型 (限授權用戶)</option>
+                            <option value="openai">OpenAI (自訂)</option>
+                            <option value="anthropic">Claude (自訂)</option>
+                            <option value="google">Gemini (自訂)</option>
+                            <option value="openrouter">OpenRouter (自訂)</option>
+                            <option value="xai">Grok (自訂)</option>
+                            <option value="mistral">Mistral (自訂)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="api-model-select">模型型號</label>
+                        <select id="api-model-select"></select>
+                    </div>
+                    <div id="api-key-form-group" class="form-group">
+                        <label for="api-key">API 金鑰</label>
+                        <div class="api-key-container">
+                            <input type="password" id="api-key" placeholder="API 金鑰">
+                            <button id="test-api-btn" class="action-btn-sm">測試連線</button>
+                        </div>
+                    </div>
+                    <div id="api-status-indicator"></div>
+
+                    <h4>進階參數</h4>
+                    <div class="form-group">
+                        <div class="settings-slider-group">
+                            <label for="temperature-slider">溫度</label>
+                            <input type="range" id="temperature-slider" min="0" max="2" step="0.1">
+                            <input type="number" id="temperature-value" class="slider-value" min="0" max="2" step="0.1">
+                        </div>
+                        <small class="setting-description">數值越高，AI 回應越隨機、有創意；越低則越穩定、保守。</small>
+                    </div>
+                     <div class="form-group">
+                        <div class="settings-slider-group">
+                            <label for="top-p-slider">Top P</label>
+                            <input type="range" id="top-p-slider" min="0" max="1" step="0.01">
+                            <input type="number" id="top-p-value" class="slider-value" min="0" max="1" step="0.01">
+                        </div>
+                        <small class="setting-description">一種控制創意的方式，建議保持預設值 1，除非您知道它的作用。</small>
+                    </div>
+                    <div class="form-group">
+                        <div class="settings-slider-group">
+                            <label for="repetition-penalty-slider">重複懲罰</label>
+                            <input type="range" id="repetition-penalty-slider" min="0" max="2" step="0.01">
+                            <input type="number" id="repetition-penalty-value" class="slider-value" min="0" max="2" step="0.01">
+                        </div>
+                         <small class="setting-description">數值越高，越能避免 AI 重複說過的話，有助於保持對話新鮮感。</small>
+                    </div>
+                    <div class="form-group">
+                        <div class="settings-slider-group">
+                            <label for="context-size-input">上下文大小</label>
+                            <input type="number" id="context-size-input" class="slider-value" min="512" max="100000" step="256" placeholder="例如: 30000">
+                        </div>
+                        <small class="setting-description">AI 能「記住」的對話長度(Token)。越高記憶越好，但花費也越高。</small>
+                    </div>
+                     <div class="form-group">
+                        <div class="settings-slider-group">
+                            <label for="max-tokens-slider">最大回應</label>
+                            <input type="range" id="max-tokens-slider" min="50" max="4096" step="1">
+                            <input type="number" id="max-tokens-value" class="slider-value" min="50" max="4096" step="1">
+                        </div>
+                        <small class="setting-description">限制 AI 單次回應的長度(Token)。過低可能導致回應被截斷。</small>
+                    </div>
+                </div>
+                <!-- 使用者設定分頁 -->
+                <div id="user-settings-tab" class="tab-content">
+                    <h3>使用者角色管理</h3>
+                    <div id="user-persona-management-area">
+                        <div class="form-group">
+                            <label for="active-user-persona-select">預設使用者角色</label>
+                            <select id="active-user-persona-select"></select>
+                        </div>
+                        <ul id="user-persona-list" class="persona-list">
+                        </ul>
+                    </div>
+                    <button id="add-user-persona-btn" class="action-btn-sm"><i class="fa-solid fa-plus"></i> 新增角色</button>
+                </div>
+                <!-- 提示詞庫分頁 -->
+                <div id="prompt-settings-tab" class="tab-content">
+                    <div class="api-preset-manager">
+                        <h4>提示詞設定檔</h4>
+                        <div class="preset-controls">
+                            <select id="prompt-set-select"></select>
+                            <button id="exportPromptSetBtn" class="icon-btn-sm" title="匯出選取的設定檔"><i class="fa-solid fa-download"></i></button>
+                            <button id="delete-prompt-set-btn" class="icon-btn-sm danger" title="刪除選取的設定檔"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                        <div class="modal-actions-split" style="margin-top: 10px;">
+                           <button id="addPromptSetBtn" class="action-btn-sm"><i class="fa-solid fa-plus"></i> 新增</button>
+                           <button id="importPromptSetBtn" class="action-btn-sm"><i class="fa-solid fa-upload"></i> 匯入</button>
+                        </div>
+                    </div>
+                    <div id="prompt-list-container">
+                        <h4>提示詞列表</h4>
+                        <ul id="prompt-list" class="prompt-item-list">
+                        </ul>
+                        <button id="addPromptBtn" class="action-btn-sm" style="margin-top: 15px;">
+                            <i class="fa-solid fa-plus"></i> 新增提示詞
+                        </button>
+                    </div>
+                    <div class="form-group" style="margin-top: 20px;">
+                        <h4>記憶生成提示</h4>
+                        <small class="setting-description">此提示詞專門用於「更新記憶」功能，指導 AI 如何總結對話內容。它獨立於上方選擇的提示詞庫。</small>
+                        <textarea id="summarization-prompt-input" rows="8"></textarea>
+                    </div>
+                </div>
+                <!-- 世界書 Tab Content -->
+                <div id="lorebook-tab" class="tab-content">
+                    <h3>世界書管理</h3>
+                    <p class="setting-description">您可以在此管理多個世界書，並啟用任意數量以在對話中使用。</p>
+                    <div id="lorebook-list-container">
+                         <ul id="lorebook-list" class="lorebook-list">
+                            <!-- 世界書列表會動態生成於此 -->
+                         </ul>
+                    </div>
+                    <div class="modal-actions-split" style="margin-top: 15px;">
+                       <button id="add-lorebook-btn" class="action-btn-sm"><i class="fa-solid fa-plus"></i> 新增世界書</button>
+                       <button id="import-lorebook-btn" class="action-btn-sm"><i class="fa-solid fa-upload"></i> 匯入世界書</button>
+                    </div>
+                </div>
+                
+                <!-- 正規表達式分頁 -->
+                <div id="regex-tab" class="tab-content">
+                    <h3>正規表達式 (輸出過濾)</h3>
+                    <p class="setting-description">在 AI 回應顯示前，自動套用規則來取代文字。規則會由上到下依序執行。</p>
+                    <ul id="regex-rules-list" class="regex-rules-list">
+                    </ul>
+                    <button id="add-regex-rule-btn" class="action-btn-sm" style="margin-top: 15px;">
+                        <i class="fa-solid fa-plus"></i> 新增規則
+                    </button>
+                </div>
+                <!-- 主題設定分頁內容 -->
+                <div id="theme-settings-tab" class="tab-content">
+                    <h3>主題設定</h3>
+                    <div class="form-group">
+                        <label for="theme-select">選擇應用程式主題</label>
+                        <select id="theme-select">
+                            <option value="light">亮色模式</option>
+                            <option value="dark">暗色模式</option>
+                            <option value="a">主題A</option>
+                            <option value="b">主題B</option>
+                        </select>
+                    </div>
+                </div>
+                <!-- 關於分頁 -->
+                <div id="about-tab" class="tab-content">
+                    <div class="about-section expanded">
+                        <div class="about-section-header">
+                            <h4><i class="fa-solid fa-circle-info"></i> 關於</h4>
+                            <i class="fa-solid fa-chevron-up"></i>
+                        </div>
+                        <div class="about-section-content">
+                            <div class="about-card">
+                                <p><strong>幸運草 AI 聊天</strong></p>
+                                <p>版本：5.1</p>
+                                <p>一個功能簡易的 AI 角色扮演聊天網站(測試版)。</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="about-section expanded">
+                        <div class="about-section-header">
+                            <h4><i class="fa-solid fa-triangle-exclamation"></i> 服務條款與免責聲明</h4>
+                            <i class="fa-solid fa-chevron-up"></i>
+                        </div>
+                        <div class="about-section-content">
+                            <h5>幸運草 服務條款與免責聲明 (個人開發者版)</h5>
+                            <p><small>最後更新日期：2025年9月15日</small></p>
+                            <p>歡迎使用 幸運草（以下簡稱「本服務」）！</p>
+                            <p>在您開始與 AI 互動前，請詳細閱讀以下條款。本「服務條款與免責聲明」（以下簡稱「本條款」）構成您與本服務開發者之間的有效法律協議。</p>
+                            <p>當您註冊、登入或以任何方式使用本服務時，即表示您已詳閱、理解並完全同意接受本條款的所有內容。若您不同意，請勿使用本服務。</p>
+                            
+                            <h6>第一條：服務性質與內容警告</h6>
+                            <p><strong>虛構性質：</strong>本服務提供與 AI 虛擬角色的互動體驗。所有角色、對話、情節、觀點與資訊皆為演算法生成的純屬虛構產物，不代表任何真實人物、實體或事件，亦不保證其準確性、完整性或適當性。</p>
+                            <p><strong>成人內容 (NSFW)：</strong>本服務包含成人導向的內容，其設計僅為娛樂目的。請務必將所有互動內容視為虛構，切勿將其與現實世界混淆或作為現實生活的指導。</p>
+
+                            <h6>第二條：使用者資格與年齡限制</h6>
+                            <p>本服務僅供達到您所在司法管轄區法定成年年齡（通常為18歲或以上）的使用者。</p>
+                            <p>您在此聲明並保證，您已達到法定成年年齡，並具備完全的法律權利與能力來接受本條款。若您未滿法定成年年齡，您必須立即停止使用本服務。開發者保留要求驗證年齡及終止任何開發者懷疑為未成年使用者帳戶的權利。</p>
+                            
+                            <h6>第三條：使用者行為準則</h6>
+                            <p>您同意對您在本服務中的所有行為以及您所生成的內容負全部責任。您承諾絕不利用本服務從事、生成、誘導或傳播以下任何性質的內容：</p>
+                            <ul>
+                                <li><strong>兒童剝削：</strong>任何與兒童色情、性虐待、引誘或剝削相關的圖像、文字或意圖。此為絕對紅線，對此類內容零容忍。</li>
+                                <li><strong>非法活動：</strong>教唆、協助或推廣任何違反您所在地法律的行為，包括但不限於詐騙、製造違禁品、非法交易等。</li>
+                                <li><strong>真實傷害與暴力：</strong>威脅、煽動或美化針對任何真實個人或群體的暴力、恐怖主義、自殘或自殺行為。此條款不限制純屬虛構情節的描述，但嚴禁將本服務用於策劃或鼓勵現實世界的傷害。</li>
+                                <li><strong>仇恨言論：</strong>基於種族、國籍、宗教、性別、性取向、殘疾或任何其他受保護特徵的歧視、騷擾、誹謗或煽動仇恨。</li>
+                                <li><strong>侵犯隱私：</strong>分享、發布或索取他人的非公開個人資訊（如姓名、地址、電話、身分證號碼等）。</li>
+                            </ul>
+
+                            <h6>第四條：免責聲明與責任限制</h6>
+                            <p><strong>按「現狀」提供：</strong>本服務乃依「現狀」及「現有」基礎提供。開發者不對服務的穩定性、可靠性、準確性、安全性或持續可用性做出任何明示或暗示的保證。</p>
+                            <p><strong>內容免責：</strong>您明確理解並同意，AI 生成的內容可能無法預測、不準確或可能令您感到不快。本服務開發者對 AI 產出的任何資訊、言論、建議或情節，不承擔任何形式的保證或法律責任。</p>
+                            <p><strong>非專業建議：</strong>本服務的所有內容均不構成且不能替代專業的醫療、法律、財務、心理或任何其他領域的建議。您不應依賴本服務的內容做出任何重大決策。</p>
+                            <p><strong>責任限制：</strong>在法律允許的最大範圍內，本服務開發者不對任何因您使用或無法使用本服務而導致的任何直接、間接、附帶、特殊或懲罰性損害（包括但不限於資料損失、利潤損失或商譽損失）承擔責任。</p>
+
+                            <h6>第五條：服務的中止與終止</h6>
+                            <p>若開發者單方面認定您已違反本條款的任何規定，特別是第三條的「使用者行為準則」，開發者保留權利，可不經事先通知，隨時暫停、限制或永久終止您對本服務的全部或部分存取權限，且無需對您或任何第三方承擔責任。</p>
+                            
+                            <h6>第六條：條款變更</h6>
+                            <p>開發者可能隨時修訂本條款。任何變更將於本應用程式內公布時立即生效。您在條款變更後繼續使用本服務，將被視為已閱讀、理解並接受修訂後的條款。建議您定期查看本條款。</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- 資料管理分頁內容 -->
+                <div id="data-management-tab" class="tab-content">
+                    <h3>備份與還原</h3>
+                    <p>您可以將所有角色、對話紀錄和設定匯出成一個單一的備份檔案。之後可以在任何裝置上匯入此檔案來還原您的資料。</p>
+                    <div class="modal-actions-split">
+                        <button id="global-export-btn" class="action-btn"><i class="fa-solid fa-download"></i> 匯出所有資料</button>
+                        <button id="open-import-options-btn" class="action-btn"><i class="fa-solid fa-upload"></i> 匯入備份檔案</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancel-global-settings-btn" class="action-btn secondary">取消</button>
+                <button id="save-global-settings-btn" class="action-btn primary">儲存設定</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="import-options-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2>選擇匯入模式</h2>
+            <div class="modal-body">
+                <div class="import-option">
+                    <h4><i class="fa-solid fa-file-import"></i> 合併匯入</h4>
+                    <p>保留您現有的資料，並只加入備份檔案中新增的內容。如果遇到重複的項目，將會保留您現有的版本。</p>
+                    <button id="import-merge-btn" class="action-btn full-width">選擇檔案並合併</button>
+                </div>
+                <div class="import-option">
+                    <h4 class="danger-text"><i class="fa-solid fa-triangle-exclamation"></i> 覆蓋匯入</h4>
+                    <p><b>警告：</b>這將會刪除您目前所有的角色、對話和設定，並用備份檔案的內容完全取代。此操作無法復原。</p>
+                    <button id="import-overwrite-btn" class="action-btn danger full-width">選擇檔案並覆蓋</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancel-import-options-btn" class="action-btn secondary">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="export-chat-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2>匯出聊天紀錄</h2>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>請選擇匯出格式：</label>
+                    <div class="radio-group">
+                        <input type="radio" id="export-format-jsonl" name="export-format" value="jsonl" checked>
+                        <label for="export-format-jsonl">JSONL 檔案</label>
+                        <input type="radio" id="export-format-png" name="export-format" value="png">
+                        <label for="export-format-png">PNG 圖片</label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancel-export-chat-btn" class="action-btn secondary">取消</button>
+                <button id="confirm-export-chat-btn" class="action-btn primary">繼續</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="loading-overlay" class="loading-overlay hidden">
+        <div class="loading-spinner"></div>
+        <p>圖片生成中，請稍候...</p>
+    </div>
+
+    <div id="user-persona-editor-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2 id="user-persona-editor-title">新增使用者角色</h2>
+            <div class="modal-body">
+                <label for="user-persona-avatar-upload" class="avatar-upload-label">
+                    <div class="avatar-preview-container">
+                        <img id="user-persona-avatar-preview" src="https://placehold.co/100x100/EFEFEF/AAAAAA?text=頭像" alt="使用者角色頭像預覽" class="avatar-preview">
+                        <div class="avatar-upload-overlay"><i class="fa-solid fa-camera"></i></div>
+                    </div>
+                </label>
+                <input type="file" id="user-persona-avatar-upload" class="avatar-upload-input" accept="image/*">
+
+                <div class="form-group">
+                    <label for="user-persona-name">角色名稱</label>
+                    <input type="text" id="user-persona-name" placeholder="您的名稱">
+                </div>
+                <div class="form-group">
+                    <label for="user-persona-description">角色描述</label>
+                    <textarea id="user-persona-description" placeholder="關於您的描述..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancel-user-persona-editor-btn" class="action-btn secondary">取消</button>
+                <button id="save-user-persona-btn" class="action-btn primary">儲存</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="memory-editor-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2>編輯長期記憶</h2>
+            <div class="modal-body">
+                <textarea id="memory-editor-textarea"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button id="cancel-memory-editor-btn" class="action-btn secondary">取消</button>
+                <button id="save-memory-editor-btn" class="action-btn primary">儲存</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="auth-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <!-- 登入視圖 -->
+            <div id="login-view">
+                <h2>登入</h2>
+                <div class="modal-body">
+                    <button id="google-login-btn" class="action-btn social-btn"><i class="fa-brands fa-google"></i> 使用 Google 登入</button>
+                    <div class="divider">或</div>
+                    <form id="login-form">
+                        <div class="form-group">
+                            <label for="login-email">電子郵件 / 授權帳號</label>
+                            <input type="email" id="login-email" name="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="login-password">密碼</label>
+                            <input type="password" id="login-password" name="password" required>
+                        </div>
+                        <button type="submit" class="action-btn primary full-width">登入</button>
+                    </form>
+                    <p class="form-switcher">還沒有帳號嗎？ <a href="#" id="show-register-view-btn">立即註冊</a></p>
+                </div>
+            </div>
+            <!-- 註冊視圖 -->
+            <div id="register-view" class="hidden">
+                 <h2>註冊</h2>
+                <div class="modal-body">
+                     <form id="register-form">
+                        <div class="form-group">
+                            <label for="register-name">您的名稱</label>
+                            <input type="text" id="register-name" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="register-email">電子郵件</label>
+                            <input type="email" id="register-email" name="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="register-password">密碼</label>
+                            <input type="password" id="register-password" name="password" required>
+                        </div>
+                        <button type="submit" class="action-btn primary full-width">註冊</button>
+                    </form>
+                    <p class="form-switcher">已經有帳號了？ <a href="#" id="show-login-view-btn">返回登入</a></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancel-auth-modal-btn" class="action-btn secondary">取消</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="prompt-editor-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2 id="prompt-editor-title">編輯提示詞</h2>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="prompt-editor-name">提示詞名稱</label>
+                    <input type="text" id="prompt-editor-name">
+                </div>
+                 <div class="form-group">
+                    <label for="prompt-editor-position">位置</label>
+                    <select id="prompt-editor-position">
+                        <option value="chat">聊天中的提示詞管理</option>
+                        <option value="relative">相對位置</option>
+                    </select>
+                </div>
+                <div id="prompt-depth-order-container" class="prompt-grid-2">
+                    <div class="form-group">
+                        <label for="prompt-editor-depth">深度</label>
+                        <input type="number" id="prompt-editor-depth" value="4">
+                    </div>
+                    <div class="form-group">
+                        <label for="prompt-editor-order">順序</label>
+                        <input type="number" id="prompt-editor-order" value="0">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="prompt-editor-role">角色 (Role)</label>
+                    <select id="prompt-editor-role">
+                        <option value="system">系統 (System)</option>
+                        <option value="user">使用者 (User)</option>
+                        <option value="assistant">AI 助手 (Assistant)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="prompt-editor-content">提示詞內容</label>
+                    <textarea id="prompt-editor-content" rows="8"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="delete-prompt-editor-btn" class="action-btn danger" style="margin-right: auto;">刪除</button>
+                <button id="cancel-prompt-editor-btn" class="action-btn secondary">取消</button>
+                <button id="save-prompt-editor-btn" class="action-btn primary">儲存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lorebook Entry Editor Modal -->
+    <div id="lorebook-entry-editor-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header-actions">
+                <h2 id="lorebook-entry-editor-title">編輯世界書條目</h2>
+            </div>
+            <div class="modal-body">
+                <div id="lorebook-entry-list-container">
+                    <ul id="lorebook-entry-list" class="prompt-item-list"></ul>
+                </div>
+                <div class="modal-actions-split" style="margin-top: 15px;">
+                     <button id="add-lorebook-entry-btn" class="action-btn-sm">
+                        <i class="fa-solid fa-plus"></i> 新增條目
+                    </button>
+                    <button id="export-single-lorebook-btn" class="action-btn-sm" title="匯出此世界書">
+                        <i class="fa-solid fa-download"></i> 匯出
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="close-lorebook-entry-editor-btn" class="action-btn secondary">關閉</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lorebook Single Entry Editor Modal -->
+    <div id="lorebook-editor-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2 id="lorebook-editor-title">編輯條目</h2>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="lorebook-entry-name">條目名稱 (註解)</label>
+                    <input type="text" id="lorebook-entry-name" placeholder="例如：魔法學院">
+                </div>
+                <div class="form-group">
+                    <label for="lorebook-entry-keywords">主要關鍵字 (以逗號分隔)</label>
+                    <textarea id="lorebook-entry-keywords" rows="2" placeholder="魔法,學校,校園"></textarea>
+                </div>
+                 <div class="form-group">
+                    <label for="lorebook-entry-secondary-keywords">次要關鍵字 (以逗號分隔)</label>
+                    <textarea id="lorebook-entry-secondary-keywords" rows="2" placeholder="選填，用於反向邏輯"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="lorebook-entry-content">內容</label>
+                    <textarea id="lorebook-entry-content" rows="6" placeholder="關於這個條目的詳細描述..."></textarea>
+                </div>
+
+                <div class="advanced-section">
+                    <div class="advanced-section-header">
+                        <h4><i class="fa-solid fa-cogs"></i> 進階設定</h4>
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </div>
+                    <div class="advanced-section-content">
+                        <div class="prompt-grid-2">
+                            <div class="form-group">
+                                <label for="lorebook-entry-trigger">觸發模式</label>
+                                <select id="lorebook-entry-trigger">
+                                    <option value="keyword">關鍵字觸發 (綠燈)</option>
+                                    <option value="constant">恆定觸發 (藍燈)</option>
+                                </select>
+                            </div>
+                             <div class="form-group">
+                                <label for="lorebook-entry-logic">關鍵字邏輯</label>
+                                <select id="lorebook-entry-logic">
+                                    <option value="0">包含任一 (OR)</option>
+                                    <option value="1">包含全部 (AND)</option>
+                                    <option value="2">未完全包含 (NOT AND)</option>
+                                    <option value="3">完全不含 (NOT OR)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="lorebook-entry-position">插入位置</label>
+                            <select id="lorebook-entry-position">
+                                <option value="before_char">角色定義之前</option>
+                                <option value="after_char">角色定義之後</option>
+                            </select>
+                        </div>
+                        <div class="prompt-grid-2">
+                            <div class="form-group">
+                                <label for="lorebook-entry-order">插入順序</label>
+                                <input type="number" id="lorebook-entry-order" value="100">
+                            </div>
+                            <div class="form-group">
+                                <label for="lorebook-entry-depth">掃描深度</label>
+                                <input type="number" id="lorebook-entry-depth" value="4">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <h4>額外匹配來源</h4>
+                             <div class="checkbox-grid">
+                                <div class="checkbox-group">
+                                    <input type="checkbox" id="match-char-desc">
+                                    <label for="match-char-desc">角色描述</label>
+                                </div>
+                                <div class="checkbox-group">
+                                    <input type="checkbox" id="match-scenario">
+                                    <label for="match-scenario">場景設定</label>
+                                </div>
+                                 <div class="checkbox-group">
+                                    <input type="checkbox" id="match-creator-notes">
+                                    <label for="match-creator-notes">創作者備註</label>
+                                </div>
+                                <div class="checkbox-group">
+                                    <input type="checkbox" id="match-persona-desc">
+                                    <label for="match-persona-desc">使用者角色描述</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="delete-lorebook-entry-btn" class="action-btn danger" style="margin-right: auto;">刪除</button>
+                <button id="cancel-lorebook-editor-btn" class="action-btn secondary">取消</button>
+                <button id="save-lorebook-entry-btn" class="action-btn primary">儲存</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 刪除選項 Modal -->
+    <div id="delete-options-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2>您想要如何刪除？</h2>
+            <div class="modal-body">
+                <div class="import-option">
+                    <h4 id="delete-single-version-title">刪除滑動 (此版本)</h4>
+                    <p id="delete-single-version-desc">保留其他由「再生成」建立的版本。</p>
+                </div>
+                <div class="import-option">
+                    <h4 class="danger-text">刪除訊息 (全部版本)</h4>
+                    <p id="delete-all-versions-desc">這則 AI 回覆及其所有版本將被永久移除。</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancel-delete-options-btn" class="action-btn secondary" style="margin-right: auto;">關閉</button>
+                <button id="delete-single-version-btn" class="action-btn primary">刪除滑動</button>
+                <button id="delete-all-versions-btn" class="action-btn danger">刪除訊息</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- [新增] 進階匯入選項 Modal -->
+    <div id="advanced-import-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2>偵測到額外資料</h2>
+            <div class="modal-body" id="advanced-import-content">
+                <!-- 內容由 JS 動態生成 -->
+            </div>
+            <div class="modal-footer">
+                <button id="cancel-advanced-import-btn" class="action-btn secondary">取消</button>
+                <button id="import-just-char-btn" class="action-btn">僅匯入角色</button>
+                <button id="import-with-extras-btn" class="action-btn primary">匯入角色與額外項目</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 更新提示元件 -->
+    <div id="update-notification" class="update-notification hidden">
+        <span>網站有新的版本！</span>
+        <button id="reload-page-btn">立即更新</button>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
