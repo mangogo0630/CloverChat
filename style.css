@@ -1212,6 +1212,41 @@ input[type="range"]::-moz-range-thumb {
     .modal-body select {
         font-size: 16px !important;
     }
+
+    /* [新增] 手機版 Modal 優化 */
+    .modal-content {
+        width: 98%; /* 幾乎佔滿寬度 */
+        max-height: 95vh; /* 增加高度 */
+        height: auto; /* 允許自適應 */
+        display: flex;
+        flex-direction: column;
+    }
+
+    .modal-body {
+        padding: 15px; /* 減少內邊距 */
+        flex: 1 1 auto; /* 確保佔據剩餘空間 */
+    }
+
+    .modal-footer {
+        padding: 12px 15px; /* 減少底部邊距 */
+        flex-shrink: 0; /* 防止被壓縮 */
+    }
+
+    .settings-tabs {
+        flex-wrap: nowrap; /* 防止 Tab 換行 */
+        overflow-x: auto; /* 允許橫向滾動 */
+        padding: 0 10px;
+        justify-content: flex-start; /* 靠左對齊 */
+    }
+
+    .tab-btn {
+        padding: 12px 15px; /* 稍微縮小 Tab */
+        flex-shrink: 0; /* 防止被壓縮 */
+    }
+    
+    .form-group {
+        margin-bottom: 12px; /* 減少表單間距 */
+    }
 }
 
 .chat-bubble p {
@@ -2260,4 +2295,3 @@ html.theme-b body .update-notification {
     font-weight: 600;
     color: var(--text-color);
 }
-
