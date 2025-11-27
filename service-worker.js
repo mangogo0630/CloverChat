@@ -2,7 +2,7 @@
 
 // 版本號：每次您更新網站的任何核心檔案時，請務必將此版本號 +1
 // 例如：'ice-chat-cache-v2', 'ice-chat-cache-v3' ...
-const CACHE_NAME = 'ice-chat-cache-v5.1.1';
+const CACHE_NAME = 'ice-chat-cache-v5.2.0';
 
 // 需要被快取的核心檔案列表
 const urlsToCache = [
@@ -33,13 +33,8 @@ const urlsToCache = [
   'https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js',
   // 核心圖片資源
   './pic/milkteashop.png',
-  './pic/qi.jpg',
   './pic/33.jpg',
   './pic/yan.jpg',
-  './pic/Ashel.png',
-  './pic/H_WISER.png',
-  './pic/Yakuichi.png',
-  './pic/江晏仁.png',
   'https://placehold.co/100x100/EFEFEF/AAAAAA?text=頭像'
 ];
 
