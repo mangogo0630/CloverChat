@@ -32,10 +32,14 @@ const urlsToCache = [
   'https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js',
   'https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js',
   // 核心圖片資源
-  'https://raw.githubusercontent.com/ha810505ha/ttt/main/pic/milkteashop.png',
-  'https://raw.githubusercontent.com/ha810505ha/ttt/main/pic/qi.jpg',
-  'https://raw.githubusercontent.com/ha810505ha/ttt/main/pic/33.jpg',
-  'https://raw.githubusercontent.com/ha810505ha/ttt/main/pic/yan.jpg',
+  './pic/milkteashop.png',
+  './pic/qi.jpg',
+  './pic/33.jpg',
+  './pic/yan.jpg',
+  './pic/Ashel.png',
+  './pic/H_WISER.png',
+  './pic/Yakuichi.png',
+  './pic/江晏仁.png',
   'https://placehold.co/100x100/EFEFEF/AAAAAA?text=頭像'
 ];
 
