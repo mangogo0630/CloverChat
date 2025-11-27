@@ -95,13 +95,13 @@ async function initialize() {
     setupMarkdownRenderer();
     
     const firebaseConfig = {
-      apiKey: "AIzaSyBKfM5fvlEr72B1aXGNwW9dmpuTMHvInaI",
-      authDomain: "icechat-1f28c.firebaseapp.com",
-      projectId: "icechat-1f28c",
-      storageBucket: "icechat-1f28c.firebasestorage.app",
-      messagingSenderId: "146757831481",
-      appId: "1:146757831481:web:7c7a786134eb4e4cccf6e8",
-      measurementId: "G-M93QNY87PM"
+      apiKey: "AIzaSyBgyVaU8SzRqTM7tyS8t7urcEMa5C4pUvg",
+      authDomain: "cloverchat-b7b47.firebaseapp.com",
+      projectId: "cloverchat-b7b47",
+      storageBucket: "cloverchat-b7b47.firebasestorage.app",
+      messagingSenderId: "1023345342698",
+      appId: "1:1023345342698:web:75c89272c19e5d77057f93",
+      measurementId: "G-T8X2LEN0J8"
     };
 
     const app = initializeApp(firebaseConfig);
