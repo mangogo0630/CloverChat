@@ -92,30 +92,60 @@ export async function loadStateFromDB() {
     state.promptSets = await db.getAll('promptSets');
     state.lorebooks = await db.getAll('lorebooks'); 
 
-    if (state.characters.length === 0) {
-        try {
-            const response = await fetch('js/default_characters.json');
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+    // [新增] 強制同步預設角色邏輯
+    try {
+        const response = await fetch('js/default_characters.json');
+        if (response.ok) {
             const defaultCharacters = await response.json();
-            
+            const defaultCharIds = new Set(defaultCharacters.map(c => c.id));
+
+            // 1. 刪除已不在 JSON 中的舊預設角色 (僅限 char_default_ 開頭的 ID)
+            const charsToDelete = state.characters.filter(c => 
+                c.id.startsWith('char_default_') && !defaultCharIds.has(c.id)
+            );
+
+            for (const char of charsToDelete) {
+                await db.deleteItem('characters', char.id);
+                console.log(`已移除過時的預設角色: ${char.name} (${char.id})`);
+            }
+
+            // 2. 更新或新增 JSON 中的預設角色
             for (const char of defaultCharacters) {
+                // 檢查是否已存在，若存在則保留使用者的個別設定（如 loved, order），僅更新內容
+                const existingChar = state.characters.find(c => c.id === char.id);
+                
                 if (typeof char.firstMessage === 'string') {
                     char.firstMessage = [char.firstMessage];
                 }
-                char.loved = char.loved || false;
-                char.order = char.order || state.characters.length;
-                char.scenario = char.scenario || ''; // 確保新角色有 scenario 欄位
+                // 確保必要的欄位存在
+                char.scenario = char.scenario || '';
+
+                if (existingChar) {
+                    // 保留使用者自定義的屬性
+                    char.loved = existingChar.loved;
+                    char.order = existingChar.order;
+                } else {
+                    // 新角色的預設值
+                    char.loved = false;
+                    char.order = char.order || state.characters.length;
+                }
+
                 await db.put('characters', char);
             }
+
+            // 重新讀取最新的角色列表
             state.characters = await db.getAll('characters');
-            console.log('成功從 JSON 檔案載入預設角色。');
-        } catch (error) {
-            console.error("無法載入預設角色檔案 'js/default_characters.json':", error);
-            alert("錯誤：無法載入預設角色資料，請檢查主控台。");
         }
+    } catch (error) {
+        console.error("同步預設角色失敗:", error);
+    }
+
+    if (state.characters.length === 0) {
+        // 備用邏輯：如果上面同步失敗且資料庫為空，則嘗試手動建立（通常不會執行到這裡）
+        // 此處保留原本的錯誤處理邏輯
+        console.warn("角色列表為空，且同步可能失敗。");
     } else {
+        // 執行資料遷移 (針對非預設角色)
         let charMigrationNeeded = false;
         const updatePromises = state.characters.map((char, index) => {
             let updated = false;
