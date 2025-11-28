@@ -1216,7 +1216,7 @@ input[type="range"]::-moz-range-thumb {
     /* [新增] 手機版 Modal 優化 */
     .modal-content {
         width: 98%; /* 幾乎佔滿寬度 */
-        max-height: 80vh; /* 增加高度 */
+        max-height: 86vh; /* 增加高度 */
         height: auto; /* 允許自適應 */
         display: flex;
         flex-direction: column;

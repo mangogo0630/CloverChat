@@ -66,7 +66,6 @@ export const topPValue = document.getElementById('top-p-value');
 export const repetitionPenaltySlider = document.getElementById('repetition-penalty-slider');
 export const repetitionPenaltyValue = document.getElementById('repetition-penalty-value');
 export const contextSizeInput = document.getElementById('context-size-input');
-export const maxTokensSlider = document.getElementById('max-tokens-slider');
 export const maxTokensValue = document.getElementById('max-tokens-value');
 export const summarizationMaxTokensSlider = document.getElementById('summarization-max-tokens-slider');
 export const summarizationMaxTokensValue = document.getElementById('summarization-max-tokens-value');

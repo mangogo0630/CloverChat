@@ -347,9 +347,8 @@
                     </div>
                      <div class="form-group">
                         <div class="settings-slider-group">
-                            <label for="max-tokens-slider">最大回應</label>
-                            <input type="range" id="max-tokens-slider" min="50" max="4096" step="1">
-                            <input type="number" id="max-tokens-value" class="slider-value" min="50" max="4096" step="1">
+                            <label for="max-tokens-value">最大回應</label>
+                            <input type="number" id="max-tokens-value" class="slider-value" min="50" max="128000" step="1" placeholder="例如: 4096">
                         </div>
                         <small class="setting-description">限制 AI 單次回應的長度(Token)。過低可能導致回應被截斷。</small>
                     </div>

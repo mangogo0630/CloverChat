@@ -372,7 +372,6 @@ export function loadGlobalSettingsToUI() {
     DOM.repetitionPenaltySlider.value = settings.repetitionPenalty || 0;
     DOM.repetitionPenaltyValue.value = settings.repetitionPenalty || 0;
     DOM.contextSizeInput.value = settings.contextSize || 30000;
-    DOM.maxTokensSlider.value = settings.maxTokens || 3000;
     DOM.maxTokensValue.value = settings.maxTokens || 3000;
     DOM.summarizationMaxTokensSlider.value = settings.summarizationMaxTokens || 1000;
     DOM.summarizationMaxTokensValue.value = settings.summarizationMaxTokens || 1000;

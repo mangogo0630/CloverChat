@@ -259,7 +259,7 @@ async function callProxyApi(provider, apiKey, messagePayload, isForSummarization
             
             body = { ...baseParams, messages: messagePayload };
             
-            if (provider === 'mistral' || provider === 'xai' || (provider === 'openai' && (settings.apiModel.includes('gpt-5') || settings.apiModel.includes('gpt-4.1')))) {
+            if (provider === 'mistral' || provider === 'xai' || (provider === 'openai' && (settings.apiModel.includes('gpt-5') || settings.apiModel.includes('gpt-4.1') || settings.apiModel.includes('o1') || settings.apiModel.includes('gpt-4o')))) {
                 body.max_completion_tokens = maxTokensValue;
             } else {
                 body.max_tokens = maxTokensValue;

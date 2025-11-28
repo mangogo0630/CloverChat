@@ -186,7 +186,6 @@ export function setupEventListeners() {
     if (DOM.temperatureSlider) Utils.setupSliderSync(DOM.temperatureSlider, DOM.temperatureValue);
     if (DOM.topPSlider) Utils.setupSliderSync(DOM.topPSlider, DOM.topPValue);
     if (DOM.repetitionPenaltySlider) Utils.setupSliderSync(DOM.repetitionPenaltySlider, DOM.repetitionPenaltyValue);
-    if (DOM.maxTokensSlider) Utils.setupSliderSync(DOM.maxTokensSlider, DOM.maxTokensValue);
     if (DOM.summarizationMaxTokensSlider) Utils.setupSliderSync(DOM.summarizationMaxTokensSlider, DOM.summarizationMaxTokensValue);
     
     safeAddEventListener(DOM.apiProviderSelect, 'change', UI.updateModelDropdown);
