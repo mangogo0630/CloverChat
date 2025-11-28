@@ -1605,14 +1605,25 @@ export function openMemoryEditor() {
     const memory = state.longTermMemories[state.activeCharacterId]?.[state.activeChatId] || '尚無長期記憶。';
     DOM.memoryEditorTextarea.value = memory;
     
-    // 預設進入預覽模式
-    const markdownText = DOM.memoryEditorTextarea.value;
-    const htmlContent = safeRenderMarkdown(markdownText);
-    
-    DOM.memoryMarkdownPreview.innerHTML = htmlContent;
-    DOM.memoryEditorTextarea.classList.add('hidden');
-    DOM.memoryMarkdownPreview.classList.remove('hidden');
-    DOM.toggleMemoryPreviewBtn.innerHTML = '<i class="fa-solid fa-pen"></i> 編輯模式';
+    try {
+        // 預設進入預覽模式
+        const markdownText = DOM.memoryEditorTextarea.value;
+        const htmlContent = safeRenderMarkdown(markdownText);
+        
+        DOM.memoryMarkdownPreview.innerHTML = htmlContent;
+        DOM.memoryEditorTextarea.classList.add('hidden');
+        DOM.memoryMarkdownPreview.classList.remove('hidden');
+        if (DOM.toggleMemoryPreviewBtn) {
+            DOM.toggleMemoryPreviewBtn.innerHTML = '<i class="fa-solid fa-pen"></i> 編輯模式';
+        }
+    } catch (e) {
+        console.error("Markdown 渲染失敗，切換回編輯模式:", e);
+        DOM.memoryEditorTextarea.classList.remove('hidden');
+        DOM.memoryMarkdownPreview.classList.add('hidden');
+        if (DOM.toggleMemoryPreviewBtn) {
+            DOM.toggleMemoryPreviewBtn.innerHTML = '<i class="fa-solid fa-eye"></i> 預覽 Markdown';
+        }
+    }
     
     toggleModal('memory-editor-modal', true);
 }
@@ -1624,16 +1635,25 @@ export function handleToggleMemoryPreview() {
         // 切換回編輯模式
         DOM.memoryMarkdownPreview.classList.add('hidden');
         DOM.memoryEditorTextarea.classList.remove('hidden');
-        DOM.toggleMemoryPreviewBtn.innerHTML = '<i class="fa-solid fa-eye"></i> 預覽 Markdown';
+        if (DOM.toggleMemoryPreviewBtn) {
+            DOM.toggleMemoryPreviewBtn.innerHTML = '<i class="fa-solid fa-eye"></i> 預覽 Markdown';
+        }
     } else {
         // 切換到預覽模式
-        const markdownText = DOM.memoryEditorTextarea.value;
-        const htmlContent = safeRenderMarkdown(markdownText);
-        
-        DOM.memoryMarkdownPreview.innerHTML = htmlContent;
-        DOM.memoryEditorTextarea.classList.add('hidden');
-        DOM.memoryMarkdownPreview.classList.remove('hidden');
-        DOM.toggleMemoryPreviewBtn.innerHTML = '<i class="fa-solid fa-pen"></i> 編輯模式';
+        try {
+            const markdownText = DOM.memoryEditorTextarea.value;
+            const htmlContent = safeRenderMarkdown(markdownText);
+            
+            DOM.memoryMarkdownPreview.innerHTML = htmlContent;
+            DOM.memoryEditorTextarea.classList.add('hidden');
+            DOM.memoryMarkdownPreview.classList.remove('hidden');
+            if (DOM.toggleMemoryPreviewBtn) {
+                DOM.toggleMemoryPreviewBtn.innerHTML = '<i class="fa-solid fa-pen"></i> 編輯模式';
+            }
+        } catch (e) {
+            console.error("Markdown 渲染失敗:", e);
+            alert("預覽生成失敗，請檢查內容格式。");
+        }
     }
 }
 

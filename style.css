@@ -2299,6 +2299,8 @@ html.theme-b body .update-notification {
 /* [新增] 記憶編輯器樣式優化 */
 #memory-editor-modal .modal-content {
     max-height: 90vh;
+    width: 95%;
+    max-width: 1000px;
 }
 #memory-editor-textarea {
     min-height: 400px; /* 增加預設高度 */
