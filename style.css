@@ -925,7 +925,7 @@ html.theme-b body .action-btn.secondary:hover { background-color: #BBD0DA; }
     max-width: 700px;
     display: flex;
     flex-direction: column;
-    max-height: 92vh; /* Increased height for better visibility */
+    max-height: 85vh;
     box-shadow: 0 10px 30px var(--shadow-color);
     transition: background-color 0.3s;
 }
@@ -934,7 +934,6 @@ html.theme-b body .action-btn.secondary:hover { background-color: #BBD0DA; }
     padding: 20px 20px 0;
     font-size: 18px;
     color: var(--primary-color);
-    flex-shrink: 0; /* Prevent header from shrinking */
 }
 .modal-content h3 { font-size: 16px; margin-top: 20px; }
 .modal-content h4 { font-size: 14px; color: var(--text-color); padding-top: 15px; }
@@ -942,8 +941,6 @@ html.theme-b body .action-btn.secondary:hover { background-color: #BBD0DA; }
 .modal-body {
     padding: 20px;
     overflow-y: auto;
-    flex: 1; /* Ensure body takes remaining space */
-    min-height: 0; /* Prevent overflow issues */
 }
 .modal-footer {
     padding: 15px 20px;
@@ -955,7 +952,6 @@ html.theme-b body .action-btn.secondary:hover { background-color: #BBD0DA; }
     border-bottom-left-radius: 16px;
     border-bottom-right-radius: 16px;
     transition: background-color 0.3s, border-color 0.3s;
-    flex-shrink: 0; /* Prevent footer from shrinking */
 }
 .modal-actions-split {
     display: flex;
@@ -1081,7 +1077,7 @@ html.theme-b body .modal-body textarea:focus {
 
 .settings-slider-group {
     display: grid;
-    grid-template-columns: 105px 1fr 60px; /* [MODIFIED] 固定標籤寬度以容納較長文字 (如摘要長度上限) */
+    grid-template-columns: 1fr 2fr 60px;
     align-items: center;
     gap: 10px;
 }
@@ -1220,7 +1216,7 @@ input[type="range"]::-moz-range-thumb {
     /* [新增] 手機版 Modal 優化 */
     .modal-content {
         width: 98%; /* 幾乎佔滿寬度 */
-        max-height: 85vh; /* [MODIFIED] 減少高度以避免被瀏覽器工具列遮擋 */
+        max-height: 95vh; /* 增加高度 */
         height: auto; /* 允許自適應 */
         display: flex;
         flex-direction: column;
