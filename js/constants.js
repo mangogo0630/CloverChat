@@ -11,7 +11,7 @@ export const DEFAULT_AVATAR = 'https://placehold.co/100x100/EFEFEF/AAAAAA?text=�
 // - firebaseEmail: 您在 Firebase 後台為該使用者建立的「完整 Email」。
 // ==============================================================================
 export const PREMIUM_ACCOUNTS = [
-    { username: 'dango', firebaseEmail: 'dangogo0214@gmail.com' },
+    // { username: 'XXX', firebaseEmail: 'XXX@gmail.com' },
     // 如果您有更多帳號，可以依照此格式繼續往下新增：
     // { username: 'test02', firebaseEmail: 'test02@premium.user' },
 ];
