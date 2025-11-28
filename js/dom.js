@@ -67,7 +67,6 @@ export const repetitionPenaltySlider = document.getElementById('repetition-penal
 export const repetitionPenaltyValue = document.getElementById('repetition-penalty-value');
 export const contextSizeInput = document.getElementById('context-size-input');
 export const maxTokensValue = document.getElementById('max-tokens-value');
-export const summarizationMaxTokensSlider = document.getElementById('summarization-max-tokens-slider');
 export const summarizationMaxTokensValue = document.getElementById('summarization-max-tokens-value');
 export const userPersonaEditorModal = document.getElementById('user-persona-editor-modal');
 export const userPersonaEditorTitle = document.getElementById('user-persona-editor-title');
