@@ -2295,3 +2295,40 @@ html.theme-b body .update-notification {
     font-weight: 600;
     color: var(--text-color);
 }
+
+/* [新增] 記憶編輯器樣式優化 */
+#memory-editor-modal .modal-content {
+    max-height: 90vh;
+}
+#memory-editor-textarea {
+    min-height: 400px; /* 增加預設高度 */
+    font-family: 'Courier New', Courier, monospace; /* 使用等寬字型方便編輯 Markdown */
+    line-height: 1.6;
+}
+
+/* 預覽區塊樣式 (預設隱藏) */
+.markdown-preview {
+    min-height: 400px;
+    padding: 15px;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background-color: var(--input-background);
+    overflow-y: auto;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-color);
+}
+
+.markdown-preview h1, .markdown-preview h2, .markdown-preview h3 {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    color: var(--primary-color);
+}
+
+.markdown-preview ul, .markdown-preview ol {
+    padding-left: 20px;
+}
+
+.toggle-preview-btn {
+    margin-right: auto;
+}

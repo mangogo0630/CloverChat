@@ -98,6 +98,7 @@ export function setupEventListeners() {
     safeAddEventListener(DOM.updateMemoryBtn, 'click', Handlers.handleUpdateMemory);
     safeAddEventListener(DOM.viewMemoryBtn, 'click', Handlers.openMemoryEditor);
     safeAddEventListener(DOM.saveMemoryEditorBtn, 'click', Handlers.handleSaveMemory);
+    safeAddEventListener(DOM.toggleMemoryPreviewBtn, 'click', Handlers.handleToggleMemoryPreview); // NEW
     safeAddEventListener(DOM.cancelMemoryEditorBtn, 'click', () => UI.toggleModal('memory-editor-modal', false));
     
     safeAddEventListener(DOM.addCharacterBtn, 'click', () => {

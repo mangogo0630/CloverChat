@@ -1602,7 +1602,34 @@ export function openMemoryEditor() {
     }
     const memory = state.longTermMemories[state.activeCharacterId]?.[state.activeChatId] || '尚無長期記憶。';
     DOM.memoryEditorTextarea.value = memory;
+    
+    // 重置為編輯模式
+    DOM.memoryEditorTextarea.classList.remove('hidden');
+    DOM.memoryMarkdownPreview.classList.add('hidden');
+    DOM.toggleMemoryPreviewBtn.innerHTML = '<i class="fa-solid fa-eye"></i> 預覽 Markdown';
+    
     toggleModal('memory-editor-modal', true);
+}
+
+export function handleToggleMemoryPreview() {
+    const isPreviewing = !DOM.memoryMarkdownPreview.classList.contains('hidden');
+    
+    if (isPreviewing) {
+        // 切換回編輯模式
+        DOM.memoryMarkdownPreview.classList.add('hidden');
+        DOM.memoryEditorTextarea.classList.remove('hidden');
+        DOM.toggleMemoryPreviewBtn.innerHTML = '<i class="fa-solid fa-eye"></i> 預覽 Markdown';
+    } else {
+        // 切換到預覽模式
+        const markdownText = DOM.memoryEditorTextarea.value;
+        // 使用 marked 解析 Markdown，並使用 DOMPurify 清洗 HTML (如果有的話)
+        const htmlContent = DOMPurify.sanitize(marked.parse(markdownText));
+        
+        DOM.memoryMarkdownPreview.innerHTML = htmlContent;
+        DOM.memoryEditorTextarea.classList.add('hidden');
+        DOM.memoryMarkdownPreview.classList.remove('hidden');
+        DOM.toggleMemoryPreviewBtn.innerHTML = '<i class="fa-solid fa-pen"></i> 編輯模式';
+    }
 }
 
 export async function handleSaveMemory() {
