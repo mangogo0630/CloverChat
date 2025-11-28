@@ -374,6 +374,8 @@ export function loadGlobalSettingsToUI() {
     DOM.contextSizeInput.value = settings.contextSize || 30000;
     DOM.maxTokensSlider.value = settings.maxTokens || 3000;
     DOM.maxTokensValue.value = settings.maxTokens || 3000;
+    DOM.summarizationMaxTokensSlider.value = settings.summarizationMaxTokens || 1000;
+    DOM.summarizationMaxTokensValue.value = settings.summarizationMaxTokens || 1000;
     
     DOM.themeSelect.value = settings.theme || 'light';
     DOM.summarizationPromptInput.value = settings.summarizationPrompt || '';

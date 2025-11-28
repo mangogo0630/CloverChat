@@ -60,6 +60,11 @@ export async function loadStateFromDB() {
         state.activePromptSetId = settingsData.activePromptSetId || null;
     }
 
+    // 初始化摘要長度上限 (預設 1000)
+    if (state.globalSettings.summarizationMaxTokens === undefined) {
+        state.globalSettings.summarizationMaxTokens = 1000;
+    }
+
     // 初始化記憶生成提示
     if (state.globalSettings.summarizationPrompt === undefined) {
         state.globalSettings.summarizationPrompt = DEFAULT_SUMMARY_PROMPT;

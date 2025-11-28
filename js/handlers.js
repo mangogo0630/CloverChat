@@ -936,6 +936,7 @@ export async function handleSaveGlobalSettings() {
         repetitionPenalty: DOM.repetitionPenaltyValue.value,
         contextSize: contextSize,
         maxTokens: DOM.maxTokensValue.value,
+        summarizationMaxTokens: parseInt(DOM.summarizationMaxTokensValue.value, 10) || 1000,
         theme: DOM.themeSelect.value,
         summarizationPrompt: DOM.summarizationPromptInput.value.trim()
     };

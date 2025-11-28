@@ -353,6 +353,15 @@
                         </div>
                         <small class="setting-description">限制 AI 單次回應的長度(Token)。過低可能導致回應被截斷。</small>
                     </div>
+
+                    <div class="form-group">
+                        <div class="settings-slider-group">
+                            <label for="summarization-max-tokens-slider">摘要長度上限</label>
+                            <input type="range" id="summarization-max-tokens-slider" min="100" max="8192" step="100">
+                            <input type="number" id="summarization-max-tokens-value" class="slider-value" min="100" max="8192" step="100">
+                        </div>
+                        <small class="setting-description">限制「更新記憶」時生成的摘要長度。若您的對話紀錄很長，建議調高此數值 (預設 1000)。</small>
+                    </div>
                 </div>
                 <!-- 使用者設定分頁 -->
                 <div id="user-settings-tab" class="tab-content">

@@ -209,7 +209,7 @@ async function callOfficialApi(messagePayload, isForSummarization, signal) {
         messages: messagePayload,
         temperature: isForSummarization ? 0.5 : parseFloat(settings.temperature),
         top_p: isForSummarization ? 1 : parseFloat(settings.topP),
-        max_tokens: isForSummarization ? 1000 : parseInt(settings.maxTokens)
+        max_tokens: isForSummarization ? (settings.summarizationMaxTokens || 1000) : parseInt(settings.maxTokens)
     };
 
     const response = await fetch(url, {
@@ -241,7 +241,7 @@ async function callProxyApi(provider, apiKey, messagePayload, isForSummarization
         temperature: isForSummarization ? 0.5 : parseFloat(settings.temperature),
         top_p: isForSummarization ? 1 : parseFloat(settings.topP),
     };
-    const maxTokensValue = isForSummarization ? 1000 : parseInt(settings.maxTokens);
+    const maxTokensValue = isForSummarization ? (settings.summarizationMaxTokens || 1000) : parseInt(settings.maxTokens);
 
     switch (provider) {
         case "openai":
@@ -324,14 +324,8 @@ function parseResponse(provider, data) {
                 if (candidate && candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
                     return candidate.content.parts[0].text;
                 }
-                if (candidate && (candidate.finishReason === 'MAX_TOKENS' || candidate.finishReason === 'STOP')) { // STOP sometimes also indicates normal completion but check content first
-                    if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
-                         return candidate.content.parts[0].text;
-                    }
+                if (candidate && candidate.finishReason === 'MAX_TOKENS') {
                     return "⚠️ AI 回應因達到長度上限而被截斷。請嘗試增加「最大回應」的 Token 數量，或點擊「繼續生成」。";
-                }
-                if (candidate && candidate.finishReason === 'SAFETY') {
-                    return "⚠️ 內容因安全篩選而被攔截。";
                 }
                 return "⚠️ API 沒有回傳有效的內容。";
             default: 
