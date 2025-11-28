@@ -1809,8 +1809,18 @@ export function handleImportChat() {
                 if (confirm(confirmationMessage)) {
                     state.chatHistories[state.activeCharacterId][state.activeChatId] = newHistory;
                     await saveAllChatHistoriesForChar(state.activeCharacterId);
+
+                    // 恢復長期記憶 (如果存在)
+                    if (meta.long_term_memory) {
+                        if (!state.longTermMemories[state.activeCharacterId]) {
+                            state.longTermMemories[state.activeCharacterId] = {};
+                        }
+                        state.longTermMemories[state.activeCharacterId][state.activeChatId] = meta.long_term_memory;
+                        await saveAllLongTermMemoriesForChar(state.activeCharacterId);
+                    }
+
                     renderChatMessages();
-                    alert('對話紀錄匯入成功！');
+                    alert('對話紀錄匯入成功！' + (meta.long_term_memory ? '（包含長期記憶）' : ''));
                 }
             } catch (error) {
                 console.error("匯入聊天紀錄失敗:", error);

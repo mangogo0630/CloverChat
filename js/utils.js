@@ -481,6 +481,7 @@ export function exportChatAsJsonl() {
             const activeChar = state.characters.find(c => c.id === state.activeCharacterId);
             const activeUser = state.userPersonas.find(p => p.id === state.activeUserPersonaId) || state.userPersonas[0];
             const metadata = state.chatMetadatas[state.activeCharacterId]?.[state.activeChatId] || {};
+            const memory = state.longTermMemories[state.activeCharacterId]?.[state.activeChatId] || '';
             
             const now = new Date();
             const createDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}@${String(now.getHours()).padStart(2, '0')}h${String(now.getMinutes()).padStart(2, '0')}m${String(now.getSeconds()).padStart(2, '0')}s`;
@@ -490,7 +491,8 @@ export function exportChatAsJsonl() {
                 user_name: activeUser.name,
                 character_name: activeChar.name,
                 create_date: createDate,
-                chat_metadata: metadata 
+                chat_metadata: metadata,
+                long_term_memory: memory
             };
             
             let content = JSON.stringify(metaObject) + '\n';
