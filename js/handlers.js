@@ -1591,6 +1591,43 @@ export async function handleChatPersonaChange(e) {
     }
 }
 
+
+// Helper to safely render markdown
+function safeRenderMarkdown(text) {
+    if (!text) return '';
+    
+    try {
+        let parsed;
+        if (typeof marked !== 'undefined') {
+            if (typeof marked.parse === 'function') {
+                parsed = marked.parse(text);
+            } else if (typeof marked === 'function') {
+                parsed = marked(text);
+            }
+        }
+        
+        // Fallback if marked is not available or failed
+        if (!parsed) {
+             return text.replace(/\n/g, '<br>');
+        }
+        
+        // Handle Promise return from marked (if async option is enabled by default in some versions)
+        if (parsed instanceof Promise) {
+             // Synchronous fallback impossible here without async/await, 
+             // but we assume standard usage. If promise, return placeholder.
+             return "<i>Markdown rendering...</i>"; 
+        }
+
+        if (typeof DOMPurify !== 'undefined') {
+            return DOMPurify.sanitize(parsed);
+        }
+        return parsed;
+    } catch (e) {
+        console.error("Markdown render error:", e);
+        return text.replace(/\n/g, '<br>');
+    }
+}
+
 // ===================================================================================
 // 長期記憶 (Long-term Memory)
 // ===================================================================================
@@ -1605,7 +1642,7 @@ export function openMemoryEditor() {
     
     // 預設進入預覽模式
     const markdownText = DOM.memoryEditorTextarea.value;
-    const htmlContent = DOMPurify.sanitize(marked.parse(markdownText));
+    const htmlContent = safeRenderMarkdown(markdownText);
     
     DOM.memoryMarkdownPreview.innerHTML = htmlContent;
     DOM.memoryEditorTextarea.classList.add('hidden');
@@ -1626,8 +1663,7 @@ export function handleToggleMemoryPreview() {
     } else {
         // 切換到預覽模式
         const markdownText = DOM.memoryEditorTextarea.value;
-        // 使用 marked 解析 Markdown，並使用 DOMPurify 清洗 HTML (如果有的話)
-        const htmlContent = DOMPurify.sanitize(marked.parse(markdownText));
+        const htmlContent = safeRenderMarkdown(markdownText);
         
         DOM.memoryMarkdownPreview.innerHTML = htmlContent;
         DOM.memoryEditorTextarea.classList.add('hidden');
