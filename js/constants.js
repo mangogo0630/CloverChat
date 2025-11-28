@@ -16,7 +16,7 @@ export const PREMIUM_ACCOUNTS = [
     // { username: 'test02', firebaseEmail: 'test02@premium.user' },
 ];
 
-export const DEFAULT_SUMMARY_PROMPT = '請將以下對話的關鍵事實、事件、使用者偏好和角色行為總結成幾個要點，以便在未來的對話中能回憶起重點。\n\n對話內容：\n{{conversation}}';
+export const DEFAULT_SUMMARY_PROMPT = '請擔任專業的對話分析師。你的任務是閱讀下方的對話紀錄，並更新現有的長期記憶。\n\n請遵守以下規則：\n1. 【保留重要資訊】：保留重要的事實、承諾、已揭露的秘密、角色偏好、關係進展。\n2. 【刪除瑣碎對話】：刪除打招呼、重複的語句或無關緊要的日常閒聊。\n3. 【結構化輸出】：請務必使用 Markdown 條列式格式輸出。\n4. 【客觀視角】：使用第三人稱客觀描述（例如：User 表示... Char 感到...）。\n\n輸出格式範例：\n### 核心事實\n- ...\n### 關鍵事件\n- ...\n### 待辦/約定\n- ...\n\n以下是需要總結的對話內容：\n{{conversation}}';
 
 export const DEFAULT_PROMPT_SET = {
     id: 'prompt_set_default',
