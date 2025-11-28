@@ -19,7 +19,7 @@ import {
     deleteAllChatDataForChar, loadChatDataForCharacter, savePromptSet, deletePromptSet,
     saveLorebook, deleteLorebook
 } from './state.js';
-import { escapeHtml, parseChatLogFile, parseCustomDate } from './utils.js';
+import { escapeHtml, parseChatLogFile, parseCustomDate, safeRenderMarkdown } from './utils.js';
 import * as db from './db.js';
 import { callApi, buildApiMessages, buildApiMessagesFromHistory, testApiConnection } from './api.js';
 import { 
@@ -1592,41 +1592,6 @@ export async function handleChatPersonaChange(e) {
 }
 
 
-// Helper to safely render markdown
-function safeRenderMarkdown(text) {
-    if (!text) return '';
-    
-    try {
-        let parsed;
-        if (typeof marked !== 'undefined') {
-            if (typeof marked.parse === 'function') {
-                parsed = marked.parse(text);
-            } else if (typeof marked === 'function') {
-                parsed = marked(text);
-            }
-        }
-        
-        // Fallback if marked is not available or failed
-        if (!parsed) {
-             return text.replace(/\n/g, '<br>');
-        }
-        
-        // Handle Promise return from marked (if async option is enabled by default in some versions)
-        if (parsed instanceof Promise) {
-             // Synchronous fallback impossible here without async/await, 
-             // but we assume standard usage. If promise, return placeholder.
-             return "<i>Markdown rendering...</i>"; 
-        }
-
-        if (typeof DOMPurify !== 'undefined') {
-            return DOMPurify.sanitize(parsed);
-        }
-        return parsed;
-    } catch (e) {
-        console.error("Markdown render error:", e);
-        return text.replace(/\n/g, '<br>');
-    }
-}
 
 // ===================================================================================
 // 長期記憶 (Long-term Memory)
