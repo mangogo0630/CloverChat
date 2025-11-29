@@ -7,6 +7,7 @@ import { DEFAULT_AVATAR, MODELS } from './constants.js';
 import { getActivePromptSet } from './promptManager.js';
 import { getActiveLorebooks } from './lorebookManager.js';
 import { escapeHtml, safeRenderMarkdown, createSafeTemplate } from './utils.js';
+import * as SceneMapManager from './sceneMapManager.js';
 
 /**
  * @description 套用所有已啟用的正規表達式規則
@@ -61,12 +62,12 @@ export function renderCharacterList() {
         const item = document.createElement('li');
         item.className = `character-item ${char.loved ? 'loved' : ''}`;
         item.dataset.id = char.id;
-        
+
         // 安全地構建 HTML
         const avatarUrl = char.avatarUrl || DEFAULT_AVATAR;
         const charName = escapeHtml(char.name);
         const creatorText = char.creator ? `<span class="character-item-author">By: ${escapeHtml(char.creator)}</span>` : '';
-        
+
         item.innerHTML = `
             <div class="char-item-content">
                 <i class="fa-solid fa-grip-vertical drag-handle"></i>
@@ -77,7 +78,7 @@ export function renderCharacterList() {
                 </div>
             </div>
         `;
-        
+
         DOM.characterList.appendChild(item);
     });
 }
@@ -112,7 +113,7 @@ export function showChatSessionListView(charId) {
             console.error("找不到角色:", charId);
             return;
         }
-        
+
         DOM.leftPanel.classList.add('show-chats');
 
         const headerNameContainer = DOM.chatListHeaderName.parentElement;
@@ -137,7 +138,7 @@ export function renderChatSessionList() {
     DOM.chatSessionList.innerHTML = '';
     const sessions = state.chatHistories[state.activeCharacterId] || {};
     const metadatas = state.chatMetadatas[state.activeCharacterId] || {};
-    
+
     const sortedSessions = Object.keys(sessions)
         .map(chatId => ({
             id: chatId,
@@ -155,11 +156,11 @@ export function renderChatSessionList() {
     }
 
     sortedSessions.forEach(session => {
-        const lastMsgContent = session.lastMessage 
+        const lastMsgContent = session.lastMessage
             ? escapeHtml((Array.isArray(session.lastMessage.content) ? session.lastMessage.content[session.lastMessage.activeContentIndex] : session.lastMessage.content).substring(0, 25)) + '...'
             : '新對話';
         const displayName = (session.pinned ? '📌 ' : '') + escapeHtml(session.name || '') + (session.name ? '' : lastMsgContent);
-        
+
         const item = document.createElement('li');
         item.className = `chat-session-item ${session.id === state.activeChatId ? 'active' : ''}`;
         item.dataset.id = session.id;
@@ -195,16 +196,16 @@ export function renderActiveChat() {
     }
     DOM.welcomeScreen.classList.add('hidden');
     DOM.chatInterface.classList.remove('hidden');
-    
+
     const activeChar = state.characters.find(c => c.id === state.activeCharacterId);
     if (!activeChar) return;
-    
+
     const metadata = state.chatMetadatas[state.activeCharacterId]?.[state.activeChatId] || {};
 
     DOM.chatHeaderAvatar.src = activeChar.avatarUrl || DEFAULT_AVATAR;
     DOM.chatHeaderName.textContent = activeChar.name;
     DOM.chatNotesInput.value = metadata.notes || '';
-    
+
     const provider = state.globalSettings.apiProvider || 'official_gemini';
     const modelId = state.globalSettings.apiModel;
     let modelDisplayName = modelId || '未設定';
@@ -215,10 +216,10 @@ export function renderActiveChat() {
             modelDisplayName = modelObject.name;
         }
     }
-    
+
     DOM.chatHeaderModelName.textContent = modelDisplayName;
     DOM.chatHeaderModelName.title = modelDisplayName;
-    
+
     renderChatUserPersonaSelector();
     renderChatMessages();
     updateSendButtonState();
@@ -231,8 +232,8 @@ export function renderChatMessages() {
     DOM.chatWindow.innerHTML = '';
     const history = state.chatHistories[state.activeCharacterId]?.[state.activeChatId] || [];
     history.forEach((msg, index) => {
-        const contentToDisplay = (msg.role === 'assistant' && Array.isArray(msg.content)) 
-            ? msg.content[msg.activeContentIndex] 
+        const contentToDisplay = (msg.role === 'assistant' && Array.isArray(msg.content))
+            ? msg.content[msg.activeContentIndex]
             : msg.content;
         displayMessage(contentToDisplay, msg.role, msg.timestamp, index, false, msg.error);
     });
@@ -259,7 +260,7 @@ export function displayMessage(text, sender, timestamp, index, isNew, error = nu
     const activeChar = state.characters.find(c => c.id === state.activeCharacterId);
     const charAvatar = activeChar?.avatarUrl || DEFAULT_AVATAR;
     const avatarUrl = sender === 'user' ? userAvatar : charAvatar;
-    
+
     const row = document.createElement('div');
     row.className = `message-row ${sender === 'user' ? 'user-row' : 'assistant-row'} ${error ? 'has-error' : ''}`;
     row.dataset.index = index;
@@ -267,7 +268,7 @@ export function displayMessage(text, sender, timestamp, index, isNew, error = nu
     if (tempState.isScreenshotMode && tempState.selectedMessageIndices.includes(index)) {
         row.classList.add('selected');
     }
-    
+
     const formattedTimestamp = new Date(timestamp).toLocaleString('zh-TW', { hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
 
     const msgData = state.chatHistories[state.activeCharacterId]?.[state.activeChatId]?.[index];
@@ -286,7 +287,7 @@ export function displayMessage(text, sender, timestamp, index, isNew, error = nu
         // Regenerate button for the last message
         const history = state.chatHistories[state.activeCharacterId]?.[state.activeChatId] || [];
         if (index === history.length - 1) {
-             permanentActionsHTML += `<button class="regenerate-btn-sm" title="再生成一則新的回應？"><i class="fa-solid fa-arrows-rotate"></i> 再生成</button>`;
+            permanentActionsHTML += `<button class="regenerate-btn-sm" title="再生成一則新的回應？"><i class="fa-solid fa-arrows-rotate"></i> 再生成</button>`;
         }
     }
 
@@ -295,7 +296,7 @@ export function displayMessage(text, sender, timestamp, index, isNew, error = nu
 
     // Combine permanent actions and the togglable edit button
     const messageActionsHTML = permanentActionsHTML + editButtonHTML;
-    
+
     const safeAvatarUrl = avatarUrl;
     const safeSender = escapeHtml(sender);
     const safeTimestamp = escapeHtml(formattedTimestamp);
@@ -310,14 +311,14 @@ export function displayMessage(text, sender, timestamp, index, isNew, error = nu
             <div class="message-actions">${messageActionsHTML}</div>
         </div>
     `;
-    
+
     let contentToRender = text;
     if (sender === 'assistant') {
         contentToRender = applyRegexRules(text);
     }
 
     contentToRender = (contentToRender || '').replace(/(「[^」]*」|『[^』]*』)/g, '<span class="quoted-text">$1</span>');
-    
+
     const bubble = row.querySelector('.chat-bubble');
     // 使用安全的 Markdown 渲染
 
@@ -350,9 +351,12 @@ export function displayMessage(text, sender, timestamp, index, isNew, error = nu
  * @description 將 state 中的全域設定載入到 UI 中
  */
 export function loadGlobalSettingsToUI() {
-    
-
     renderAccountTab();
+    renderUserPersonaList();
+    renderLorebookList();
+    renderRegexRulesList();
+    renderKeywordMappingList();
+    renderSceneAnalysisSettings();
 
     const settings = state.globalSettings;
 
@@ -362,7 +366,7 @@ export function loadGlobalSettingsToUI() {
     }
 
     DOM.apiProviderSelect.value = settings.apiProvider || 'openai';
-    updateModelDropdown(); 
+    updateModelDropdown();
     DOM.apiModelSelect.value = settings.apiModel || (MODELS[DOM.apiProviderSelect.value] ? MODELS[DOM.apiProviderSelect.value][0].value : '');
     DOM.apiKeyInput.value = settings.apiKey || '';
     DOM.temperatureSlider.value = settings.temperature || 1;
@@ -374,7 +378,7 @@ export function loadGlobalSettingsToUI() {
     DOM.contextSizeInput.value = settings.contextSize || 30000;
     DOM.maxTokensValue.value = settings.maxTokens || 3000;
     DOM.summarizationMaxTokensValue.value = settings.summarizationMaxTokens || 1000;
-    
+
     DOM.themeSelect.value = settings.theme || 'light';
     DOM.summarizationPromptInput.value = settings.summarizationPrompt || '';
 
@@ -386,7 +390,7 @@ export function loadGlobalSettingsToUI() {
     renderLorebookList(); // [修改]
     renderRegexRulesList();
 
-   
+
 
     DOM.settingsTabsContainer.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
     DOM.globalSettingsModal.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
@@ -400,7 +404,7 @@ export function loadGlobalSettingsToUI() {
 export function updateModelDropdown() {
     const provider = DOM.apiProviderSelect.value;
     const models = MODELS[provider] || [];
-    DOM.apiModelSelect.innerHTML = ''; 
+    DOM.apiModelSelect.innerHTML = '';
     models.forEach(model => {
         const option = document.createElement('option');
         option.value = model.value;
@@ -430,7 +434,7 @@ export function renderUserPersonaList() {
         const item = document.createElement('li');
         item.className = 'persona-item';
         item.dataset.id = persona.id;
-        
+
         // 使用安全的模板創建
         item.innerHTML = createSafeTemplate(`
             <img src="{{avatarUrl}}" alt="{{name}}" class="persona-item-avatar">
@@ -443,7 +447,7 @@ export function renderUserPersonaList() {
             avatarUrl: persona.avatarUrl || DEFAULT_AVATAR,
             name: persona.name
         });
-        
+
         DOM.userPersonaList.appendChild(item);
     });
 }
@@ -499,10 +503,10 @@ export async function loadApiPresetToUI(presetId) {
     if (!preset) return;
 
     DOM.apiProviderSelect.value = preset.provider;
-    
+
     updateModelDropdown();
     await new Promise(resolve => setTimeout(resolve, 0));
-    
+
     DOM.apiModelSelect.value = preset.model;
     DOM.apiKeyInput.value = preset.apiKey;
     DOM.apiStatusIndicator.style.display = 'none';
@@ -524,7 +528,7 @@ export function toggleModal(modalId, show) {
 export function setGeneratingState(isGenerating) {
     DOM.messageInput.disabled = isGenerating;
     DOM.sendBtn.classList.toggle('is-generating', isGenerating);
-    
+
     document.querySelectorAll('.regenerate-btn-sm, .retry-btn-sm').forEach(btn => {
         btn.disabled = isGenerating;
     });
@@ -546,7 +550,7 @@ export function updateSendButtonState() {
 
     const history = state.chatHistories[state.activeCharacterId][state.activeChatId] || [];
     const lastMessage = history[history.length - 1];
-    
+
     let stateToShow = 'send';
 
     if (DOM.messageInput.value.trim() !== '') {
@@ -560,7 +564,7 @@ export function updateSendButtonState() {
             stateToShow = 'continue';
         }
     }
-    
+
     DOM.sendBtn.dataset.state = stateToShow;
     DOM.sendBtn.disabled = (stateToShow === 'send' && DOM.messageInput.value.trim() === '' && history.length === 0);
 
@@ -579,7 +583,7 @@ export function updateSendButtonState() {
 export function renderFirstMessageInputs(messages = ['']) {
     DOM.firstMessageList.innerHTML = '';
     const messagesToRender = messages.length > 0 ? messages : [''];
-    
+
     messagesToRender.forEach((msg, index) => {
         const item = document.createElement('div');
         item.className = 'first-message-item';
@@ -589,20 +593,20 @@ export function renderFirstMessageInputs(messages = ['']) {
                 <i class="fa-solid fa-trash"></i>
             </button>
         `;
-        
+
         // 安全地設置 textarea 的值
         const textarea = item.querySelector('textarea');
         textarea.value = msg;
-        
+
         DOM.firstMessageList.appendChild(item);
-        
+
         textarea.addEventListener('input', () => {
             textarea.style.height = 'auto';
             textarea.style.height = `${textarea.scrollHeight}px`;
         });
         setTimeout(() => {
-             textarea.style.height = 'auto';
-             textarea.style.height = `${textarea.scrollHeight}px`;
+            textarea.style.height = 'auto';
+            textarea.style.height = `${textarea.scrollHeight}px`;
         }, 0);
     });
 }
@@ -642,7 +646,7 @@ export function renderPromptList() {
         const item = document.createElement('li');
         item.className = 'prompt-item';
         item.dataset.id = prompt.identifier;
-        
+
         // 使用安全的模板創建
         item.innerHTML = createSafeTemplate(`
             <i class="fa-solid fa-grip-vertical drag-handle"></i>
@@ -655,7 +659,7 @@ export function renderPromptList() {
             name: prompt.name,
             enabledClass: prompt.enabled ? 'enabled' : ''
         });
-        
+
         DOM.promptList.appendChild(item);
     });
 }
@@ -674,7 +678,7 @@ export function renderLorebookList() {
         const item = document.createElement('li');
         item.className = 'lorebook-item';
         item.dataset.id = book.id;
-        
+
         item.innerHTML = createSafeTemplate(`
             <span class="lorebook-item-name" title="{{name}}">{{name}}</span>
             <div class="lorebook-item-actions">
@@ -686,7 +690,7 @@ export function renderLorebookList() {
             name: book.name,
             enabledClass: book.enabled ? 'enabled' : ''
         });
-        
+
         DOM.lorebookList.appendChild(item);
     });
 }
@@ -714,9 +718,9 @@ export function renderLorebookEntryList() {
         const item = document.createElement('li');
         item.className = 'prompt-item'; // 重用 prompt-item 樣式
         item.dataset.id = entry.id;
-        
+
         const triggerMode = entry.constant ? 'constant' : 'keyword';
-        
+
         item.innerHTML = createSafeTemplate(`
             <div class="lorebook-status-indicator {{triggerMode}}" title="切換觸發模式 (藍燈/綠燈)"></div>
             <span class="prompt-item-name" title="{{name}}">{{name}}</span>
@@ -729,7 +733,7 @@ export function renderLorebookEntryList() {
             name: entry.name,
             enabledClass: entry.enabled ? 'enabled' : ''
         });
-        
+
         DOM.lorebookEntryList.appendChild(item);
     });
 }
@@ -738,6 +742,263 @@ export function renderLorebookEntryList() {
 /**
  * @description 渲染正規表達式規則列表 (摺疊式)
  */
+// ===================================================================================
+// 場景地圖相關 UI (聊天室層級)
+// ===================================================================================
+
+
+export function renderSceneTree() {
+    if (!DOM.sceneTreeContainer) return;
+
+    const sceneMap = SceneMapManager.getActiveSceneMap();
+    if (!sceneMap) {
+        DOM.sceneTreeContainer.innerHTML = '<p class="scene-map-info">當前聊天室尚無場景資料</p>';
+        return;
+    }
+
+    DOM.sceneTreeContainer.innerHTML = '';
+
+    // 直接渲染欄位視圖
+    renderSceneColumns(sceneMap);
+}
+
+/**
+ * 渲染分欄視圖
+ */
+function renderSceneColumns(sceneMap) {
+    DOM.sceneTreeContainer.className = 'scene-tree view-columns';
+
+    // [NEW] 建立分欄容器
+    const columnsContainer = document.createElement('div');
+    columnsContainer.className = 'scene-map-columns-container';
+
+    // 從根節點開始遞迴渲染
+    for (const rootId of sceneMap.rootNodes) {
+        const column = document.createElement('div');
+        column.className = 'scene-column';
+
+        // 1. 欄位標頭 (根節點本身)
+        const header = document.createElement('div');
+        header.className = 'scene-column-header';
+
+        // [FIX] Wrap root node content in .scene-node for drag and drop compatibility
+        const rootNodeWrapper = document.createElement('div');
+        rootNodeWrapper.className = 'scene-node';
+        rootNodeWrapper.dataset.nodeId = rootId;
+        rootNodeWrapper.appendChild(renderSceneNodeContent(rootId, sceneMap, 0)); // Root depth is 0
+
+        header.appendChild(rootNodeWrapper);
+        column.appendChild(header);
+
+        // 2. 欄位內容 (子節點列表)
+        const body = document.createElement('div');
+        body.className = 'scene-column-body';
+
+        // [FIX] Handle collapsed state for root nodes
+        if (tempState.collapsedSceneNodes.has(rootId)) {
+            body.classList.add('hidden');
+        }
+
+        const rootNode = sceneMap.nodes[rootId];
+        if (rootNode && rootNode.children) {
+            for (const childId of rootNode.children) {
+                body.appendChild(renderSceneNode(childId, sceneMap, 0));
+            }
+        }
+
+        // 允許拖曳到 body 空白處 (作為該根節點的子節點)
+        // TODO: 實作拖放邏輯
+
+        column.appendChild(body);
+        columnsContainer.appendChild(column);
+    }
+
+    // [NEW] 新增欄位放置區 (Drop Zone)
+    const addColumnZone = document.createElement('div');
+    addColumnZone.className = 'scene-column-add-zone';
+    addColumnZone.innerHTML = `
+        <div class="add-zone-content">
+            <i class="fa-solid fa-plus"></i>
+            <span>拖曳至此建立新欄位</span>
+        </div>
+    `;
+    columnsContainer.appendChild(addColumnZone);
+
+    DOM.sceneTreeContainer.appendChild(columnsContainer);
+
+    // [NEW] 固定式底部放置區 (Fixed Drop Zone)
+    const fixedDropZone = document.createElement('div');
+    fixedDropZone.className = 'fixed-root-drop-zone';
+    fixedDropZone.innerHTML = `
+        <div class="fixed-zone-content">
+            <i class="fa-solid fa-plus"></i>
+            <span>拖曳至此建立新欄位</span>
+        </div>
+    `;
+    DOM.sceneTreeContainer.appendChild(fixedDropZone);
+}
+
+/**
+ * [NEW] 僅渲染節點內容 (不包含子節點遞迴)
+ */
+/**
+ * [NEW] 僅渲染節點內容 (不包含子節點遞迴)
+ * @param {string} nodeId 
+ * @param {Object} sceneMap 
+ * @param {number} depth 當前深度 (0 為根節點)
+ */
+function renderSceneNodeContent(nodeId, sceneMap, depth = 0) {
+    const node = sceneMap.nodes[nodeId];
+    if (!node) return document.createElement('div');
+
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'scene-node-content';
+    contentDiv.draggable = true;
+    contentDiv.dataset.nodeId = nodeId;
+    contentDiv.dataset.depth = depth; // [NEW] Add depth attribute for CSS styling
+
+    // 圖示根據類型
+    let iconClass = 'fa-map-marker-alt'; // location
+    if (node.type === 'container') iconClass = 'fa-box-open';
+    else if (node.type === 'item') iconClass = 'fa-cube';
+
+    const icon = `<i class="fa-solid ${iconClass}"></i>`;
+
+    // 描述預覽 (如果有)
+    // [NEW] 如果深度 > 1 (孫節點及更深)，隱藏描述以節省空間
+    const showDescription = depth <= 1;
+    const descPreview = (node.description && showDescription)
+        ? `<div class="node-desc-preview" title="${escapeHtml(node.description)}">${escapeHtml(node.description)}</div>`
+        : '';
+
+    // 展開/收合按鈕 (在 Header 中通常不需要，但在 Body 中需要)
+    // 這裡為了共用，先保留邏輯，但在 CSS 中可以隱藏 Header 的 toggle
+    const hasChildren = node.children && node.children.length > 0;
+    const isCollapsed = tempState.collapsedSceneNodes.has(nodeId);
+
+    const toggleBtn = hasChildren
+        ? `<button class="icon-btn-sm toggle-node-btn ${isCollapsed ? 'collapsed' : ''}" data-node-id="${nodeId}">
+             <i class="fa-solid fa-chevron-down"></i>
+           </button>`
+        : `<span class="toggle-placeholder"></span>`;
+
+    contentDiv.innerHTML = `
+        <div class="node-header-row">
+            <div class="node-main-info">
+                ${toggleBtn}
+                <span class="node-icon type-${node.type}">${icon}</span>
+                <span class="node-name" title="${escapeHtml(node.name)}">${escapeHtml(node.name)}</span>
+            </div>
+            
+            <div class="node-actions">
+                <button class="icon-btn-sm add-child-node-btn" data-node-id="${nodeId}" title="新增子節點">
+                    <i class="fa-solid fa-plus"></i>
+                </button>
+                <button class="icon-btn-sm edit-node-btn" data-node-id="${nodeId}" title="編輯">
+                    <i class="fa-solid fa-pencil"></i>
+                </button>
+            </div>
+        </div>
+        
+        ${descPreview}
+    `;
+
+    return contentDiv;
+}
+
+function renderSceneNode(nodeId, sceneMap, depth) {
+    const node = sceneMap.nodes[nodeId];
+    if (!node) return document.createElement('div');
+
+    const nodeDiv = document.createElement('div');
+    nodeDiv.className = 'scene-node';
+    nodeDiv.dataset.nodeId = nodeId;
+
+    // 渲染內容
+    nodeDiv.appendChild(renderSceneNodeContent(nodeId, sceneMap, depth));
+
+    // 遞迴渲染子節點
+    const hasChildren = node.children && node.children.length > 0;
+    const isCollapsed = tempState.collapsedSceneNodes.has(nodeId);
+
+    if (hasChildren) {
+        const childrenContainer = document.createElement('div');
+        childrenContainer.className = `node-children ${isCollapsed ? 'hidden' : ''}`;
+
+        for (const childId of node.children) {
+            childrenContainer.appendChild(renderSceneNode(childId, sceneMap, depth + 1));
+        }
+
+        nodeDiv.appendChild(childrenContainer);
+    }
+
+    return nodeDiv;
+}
+
+
+/**
+ * 顯示載入指示器
+ */
+export function showLoadingIndicator(message = '處理中...') {
+    const overlay = document.getElementById('loading-overlay');
+    if (overlay) {
+        const messageEl = overlay.querySelector('p');
+        if (messageEl) messageEl.textContent = message;
+        overlay.classList.remove('hidden');
+    }
+}
+
+/**
+ * 隱藏載入指示器
+ */
+export function hideLoadingIndicator() {
+    const overlay = document.getElementById('loading-overlay');
+    if (overlay) {
+        overlay.classList.add('hidden');
+    }
+}
+
+/**
+ * 渲染關鍵字映射列表
+ */
+export function renderKeywordMappingList() {
+    const container = document.getElementById('keyword-mapping-list');
+    if (!container) return;
+
+    const keywordMap = SceneMapManager.getAllKeywordMappings();
+
+    if (Object.keys(keywordMap).length === 0) {
+        container.innerHTML = '<p class="scene-map-info">尚無關鍵字映射</p>';
+        return;
+    }
+
+    container.innerHTML = Object.entries(keywordMap)
+        .map(([keyword, nodeNames]) => `
+            <div class="keyword-mapping-item">
+                <div class="keyword-mapping-header">
+                    <strong>${keyword}</strong>
+                    <button class="icon-btn-sm danger" data-keyword="${keyword}" title="刪除">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+                <div class="keyword-mapping-nodes">
+                    ${nodeNames.map(name => `<span class="node-badge">${name}</span>`).join('')}
+                </div>
+            </div>
+        `)
+        .join('');
+}
+
+/**
+ * 渲染 AI 場景分析設定
+ */
+export function renderSceneAnalysisSettings() {
+    const checkbox = document.getElementById('enable-ai-scene-analysis');
+    if (checkbox) {
+        checkbox.checked = state.globalSettings.enableAiSceneAnalysis !== false;
+    }
+}
+
 export function renderRegexRulesList() {
     DOM.regexRulesList.innerHTML = '';
     const rules = state.globalSettings.regexRules || [];
@@ -750,22 +1011,22 @@ export function renderRegexRulesList() {
         const item = document.createElement('li');
         item.className = 'regex-rule-item';
         item.dataset.id = rule.id;
-        
+
         // 創建安全的 HTML 結構
         const headerDiv = document.createElement('div');
         headerDiv.className = 'regex-rule-header';
-        
+
         headerDiv.innerHTML = `
             <button class="icon-btn-sm regex-expand-btn"><i class="fa-solid fa-chevron-down"></i></button>
             <input type="text" class="regex-name-input" placeholder="規則名稱">
             <div class="prompt-item-toggle ${rule.enabled ? 'enabled' : ''}" title="啟用/停用此規則"></div>
             <button class="icon-btn-sm danger delete-regex-rule-btn" title="刪除此規則"><i class="fa-solid fa-trash"></i></button>
         `;
-        
+
         // 安全地設置輸入值
         const nameInput = headerDiv.querySelector('.regex-name-input');
         nameInput.value = rule.name;
-        
+
         const detailsDiv = document.createElement('div');
         detailsDiv.className = 'regex-rule-details';
         detailsDiv.innerHTML = `
@@ -778,13 +1039,13 @@ export function renderRegexRulesList() {
                 <textarea class="regex-replace-input" rows="2"></textarea>
             </div>
         `;
-        
+
         // 安全地設置 textarea 的值
         const findInput = detailsDiv.querySelector('.regex-find-input');
         const replaceInput = detailsDiv.querySelector('.regex-replace-input');
         findInput.value = rule.find;
         replaceInput.value = rule.replace;
-        
+
         item.appendChild(headerDiv);
         item.appendChild(detailsDiv);
         DOM.regexRulesList.appendChild(item);
@@ -806,7 +1067,7 @@ export function showAdvancedImportModal(importedData, lorebookData, regexData, i
     tempState.importedImageBase64 = imageBase64;
 
     let contentHTML = '<p>這張角色卡除了基本設定外，還包含了以下項目。請選擇您希望如何匯入：</p>';
-    
+
     if (lorebookData) {
         const bookName = escapeHtml(lorebookData.name || `${(importedData.data || importedData).name} 的世界書`);
         contentHTML += `
@@ -816,7 +1077,7 @@ export function showAdvancedImportModal(importedData, lorebookData, regexData, i
             </div>
         `;
     }
-    
+
     if (regexData) {
         contentHTML += `
              <div class="import-option">

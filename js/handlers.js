@@ -2,7 +2,7 @@
 // 這個檔案存放所有的事件處理函式 (event handlers)。
 
 import { auth } from './main.js';
-import { 
+import {
     GoogleAuthProvider,
     signInWithPopup,
     createUserWithEmailAndPassword,
@@ -13,26 +13,29 @@ import {
 
 
 import * as DOM from './dom.js';
-import { 
+import {
     state, tempState, saveSettings, saveCharacter, deleteCharacter, saveUserPersona, deleteUserPersona,
     saveAllChatHistoriesForChar, saveAllLongTermMemoriesForChar, saveAllChatMetadatasForChar,
     deleteAllChatDataForChar, loadChatDataForCharacter, savePromptSet, deletePromptSet,
-    saveLorebook, deleteLorebook
+    saveLorebook, deleteLorebook, saveAllSceneStatesForChar
 } from './state.js';
 import { escapeHtml, parseChatLogFile, parseCustomDate, safeRenderMarkdown } from './utils.js';
 import * as db from './db.js';
 import { callApi, buildApiMessages, buildApiMessagesFromHistory, testApiConnection } from './api.js';
-import { 
-    renderCharacterList, renderChatSessionList, renderActiveChat, renderChatMessages, 
+import * as API from './api.js';
+import {
+    renderCharacterList, renderChatSessionList, renderActiveChat, renderChatMessages,
     displayMessage, toggleModal, setGeneratingState, showCharacterListView, loadGlobalSettingsToUI,
     renderApiPresetsDropdown, loadApiPresetToUI, updateModelDropdown,
     renderFirstMessageInputs, renderPromptSetSelector, renderPromptList, renderRegexRulesList,
-    renderLorebookList, renderLorebookEntryList, updateSendButtonState
+    renderLorebookList, renderLorebookEntryList, updateSendButtonState, renderSceneTree,
+    renderKeywordMappingList, showLoadingIndicator, hideLoadingIndicator
 } from './ui.js';
 import { DEFAULT_AVATAR, PREMIUM_ACCOUNTS, MODELS } from './constants.js';
 import { handleImageUpload, exportChatAsJsonl, applyTheme, importCharacter, exportCharacter, populateEditorFields } from './utils.js';
 import * as PromptManager from './promptManager.js';
 import * as LorebookManager from './lorebookManager.js';
+import * as SceneMapManager from './sceneMapManager.js';
 
 // ===================================================================================
 // 使用者認證 (Authentication)
@@ -45,11 +48,11 @@ export function handleLogin() {
 export function handleGoogleLogin() {
     const provider = new GoogleAuthProvider();
     signInWithPopup(auth, provider)
-      .then(() => toggleModal('auth-modal', false))
-      .catch(error => {
-        console.error("Google 登入失敗:", error);
-        alert(`登入失敗: ${error.message}`);
-    });
+        .then(() => toggleModal('auth-modal', false))
+        .catch(error => {
+            console.error("Google 登入失敗:", error);
+            alert(`登入失敗: ${error.message}`);
+        });
 }
 
 export function handleEmailRegister(event) {
@@ -223,17 +226,17 @@ async function sendMessage(messageText) {
     if (!state.activeCharacterId || !state.activeChatId) return;
 
     const history = state.chatHistories[state.activeCharacterId][state.activeChatId];
-    
+
     // 暫存上一則訊息，稍後用來修剪
     const lastMessage = history.length > 0 ? history[history.length - 1] : null;
 
     const timestamp = new Date().toISOString();
     history.push({ role: 'user', content: messageText, timestamp: timestamp });
     const currentUserMessageIndex = history.length - 1;
-    
+
     // 先儲存使用者訊息並更新 UI
     await saveAllChatHistoriesForChar(state.activeCharacterId);
-    renderChatMessages(); 
+    renderChatMessages();
     DOM.chatWindow.scrollTop = DOM.chatWindow.scrollHeight;
 
     DOM.messageInput.value = '';
@@ -244,10 +247,10 @@ async function sendMessage(messageText) {
     try {
         setGeneratingState(true);
         const thinkingBubble = displayMessage('...', 'assistant', new Date().toISOString(), history.length, true);
-        
+
         const messagesForApi = buildApiMessages();
         let aiResponse = await callApi(messagesForApi);
-        
+
         // 【安全的分支鎖定機制】在成功收到 AI 回應後，才修剪分支
         if (lastMessage && lastMessage.role === 'assistant' && Array.isArray(lastMessage.content) && lastMessage.content.length > 1) {
             const selectedContent = lastMessage.content[lastMessage.activeContentIndex];
@@ -257,9 +260,9 @@ async function sendMessage(messageText) {
         }
 
         history.push({ role: 'assistant', content: [aiResponse], activeContentIndex: 0, timestamp: new Date().toISOString() });
-        
+
         thinkingBubble.remove();
-        
+
         await saveAllChatHistoriesForChar(state.activeCharacterId);
         renderChatMessages();
 
@@ -274,7 +277,7 @@ async function sendMessage(messageText) {
             if (userMessage) {
                 userMessage.error = `傳送失敗`; // UI 會根據此屬性顯示重試按鈕
             }
-            
+
             await saveAllChatHistoriesForChar(state.activeCharacterId);
             renderChatMessages(); // 重新渲染聊天室，顯示帶有錯誤訊息和重試按鈕的使用者對話
         }
@@ -292,7 +295,7 @@ async function handleContinueGeneration() {
     if (!lastMessage || lastMessage.role !== 'assistant') {
         return;
     }
-    
+
     try {
         setGeneratingState(true);
         const continuePrompt = PromptManager.getPromptContentByIdentifier('continue_prompt') || "Continue.";
@@ -300,7 +303,7 @@ async function handleContinueGeneration() {
         const messagesForApi = buildApiMessagesFromHistory(tempHistory);
 
         let aiResponse = await callApi(messagesForApi);
-        
+
         const lastMessageContent = lastMessage.content[lastMessage.activeContentIndex];
         lastMessage.content[lastMessage.activeContentIndex] = lastMessageContent + aiResponse;
 
@@ -332,9 +335,9 @@ export async function retryMessage(messageIndex) {
 
             const messagesForApi = buildApiMessagesFromHistory(contextHistory);
             let aiResponse = await callApi(messagesForApi);
-            
+
             history.push({ role: 'assistant', content: [aiResponse], activeContentIndex: 0, timestamp: new Date().toISOString() });
-            
+
             thinkingBubble.remove();
             await saveAllChatHistoriesForChar(state.activeCharacterId);
             renderChatMessages();
@@ -396,7 +399,7 @@ export async function regenerateResponse(messageIndex, isSmartButton = false) {
         await saveAllChatHistoriesForChar(state.activeCharacterId);
         renderChatMessages();
     } catch (error) {
-         if (error.name !== 'AbortError') {
+        if (error.name !== 'AbortError') {
             alert(`重新生成失敗: ${error.message}`);
             console.error("重新生成 API 錯誤:", error);
         }
@@ -421,7 +424,7 @@ export async function switchVersion(messageIndex, direction) {
     const history = state.chatHistories[state.activeCharacterId][state.activeChatId];
     const msg = history[messageIndex];
     if (!msg || !Array.isArray(msg.content)) return;
-    
+
     const newIndex = msg.activeContentIndex + direction;
 
     if (newIndex >= 0 && newIndex < msg.content.length) {
@@ -462,11 +465,11 @@ export async function handleAddNewChat() {
         if (nonEmptyMessages.length > 0) {
             const user = state.userPersonas.find(p => p.id === state.activeUserPersonaId) || {};
             const userName = user.name || 'User';
-            
-            const formattedGreetings = nonEmptyMessages.map(greeting => 
+
+            const formattedGreetings = nonEmptyMessages.map(greeting =>
                 greeting.replace(/{{char}}/g, char.name).replace(/{{user}}/g, userName)
             );
-            
+
             state.chatHistories[state.activeCharacterId][newChatId].push({
                 role: 'assistant',
                 content: formattedGreetings,
@@ -475,12 +478,12 @@ export async function handleAddNewChat() {
             });
         }
     }
-    
+
     state.activeChatId = newChatId;
     await saveAllChatHistoriesForChar(state.activeCharacterId);
     await saveAllChatMetadatasForChar(state.activeCharacterId);
     await saveSettings();
-    
+
     renderChatSessionList();
     renderActiveChat();
 }
@@ -513,11 +516,17 @@ export async function handleDeleteChat(chatIdToDelete) {
         if (state.longTermMemories[state.activeCharacterId]) {
             delete state.longTermMemories[state.activeCharacterId][chatIdToDelete];
         }
+        // ✅ 添加：清理場景資料
+        if (state.sceneStates[state.activeCharacterId]) {
+            delete state.sceneStates[state.activeCharacterId][chatIdToDelete];
+        }
 
         // 將更新後的資料存回資料庫
         await saveAllChatHistoriesForChar(state.activeCharacterId);
         await saveAllChatMetadatasForChar(state.activeCharacterId);
         await saveAllLongTermMemoriesForChar(state.activeCharacterId);
+        // ✅ 添加：儲存場景資料更新
+        await saveAllSceneStatesForChar(state.activeCharacterId);
 
         // 如果被刪除的是目前開啟的聊天室，則更新 UI
         if (state.activeChatId === chatIdToDelete) {
@@ -525,7 +534,7 @@ export async function handleDeleteChat(chatIdToDelete) {
             await saveSettings();
             renderActiveChat(); // 這會顯示歡迎畫面
         }
-        
+
         // 重新渲染聊天室列表
         renderChatSessionList();
     }
@@ -551,9 +560,9 @@ export function openRenameModal(chatId) {
 
 export async function handleSaveChatName() {
     if (!tempState.renamingChatId || !state.activeCharacterId) return;
-    
+
     const metadata = state.chatMetadatas[state.activeCharacterId][tempState.renamingChatId];
-    if(metadata) {
+    if (metadata) {
         metadata.name = DOM.renameChatInput.value.trim();
         await saveAllChatMetadatasForChar(state.activeCharacterId);
         renderChatSessionList();
@@ -564,9 +573,9 @@ export async function handleSaveChatName() {
 
 export async function handleTogglePinChat(chatId) {
     if (!state.activeCharacterId) return;
-    
+
     const metadata = state.chatMetadatas[state.activeCharacterId][chatId];
-    if(metadata) {
+    if (metadata) {
         metadata.pinned = !metadata.pinned;
         await saveAllChatMetadatasForChar(state.activeCharacterId);
         renderChatSessionList();
@@ -579,6 +588,8 @@ export async function handleTogglePinChat(chatId) {
 
 export function openCharacterEditor(charId = null) {
     tempState.editingCharacterId = charId;
+    tempState.editingSceneMapId = null; // 清空場景地圖選擇
+
     if (charId) {
         const char = state.characters.find(c => c.id === charId);
         if (!char) {
@@ -597,6 +608,8 @@ export function openCharacterEditor(charId = null) {
         DOM.charVersionInput.value = char.characterVersion || '';
         DOM.charCreatorNotesInput.value = char.creatorNotes || '';
 
+        // 場景地圖已改為聊天室層級，不再需要在角色編輯器中渲染
+
     } else {
         DOM.charEditorTitle.textContent = '新增角色';
         DOM.charAvatarPreview.src = DEFAULT_AVATAR;
@@ -608,6 +621,11 @@ export function openCharacterEditor(charId = null) {
         DOM.charCreatorInput.value = '';
         DOM.charVersionInput.value = '';
         DOM.charCreatorNotesInput.value = '';
+
+        // 清空場景地圖
+        if (DOM.charSceneTreeContainer) {
+            DOM.charSceneTreeContainer.innerHTML = '<p class="setting-description">儲存角色後才能建立場景地圖</p>';
+        }
     }
     toggleModal('character-editor-modal', true);
 }
@@ -619,8 +637,8 @@ export async function handleSaveCharacter() {
 
     const firstMessageInputs = DOM.firstMessageList.querySelectorAll('.char-first-message');
     const firstMessages = Array.from(firstMessageInputs)
-                               .map(input => input.value.trim())
-                               .filter(msg => msg !== ''); 
+        .map(input => input.value.trim())
+        .filter(msg => msg !== '');
 
     const charData = {
         name: DOM.charNameInput.value.trim(),
@@ -647,7 +665,7 @@ export async function handleSaveCharacter() {
         state.activeCharacterId = newChar.id;
         await handleAddNewChat(); // 修正：加上 await
     }
-    
+
     renderCharacterList();
     if (DOM.leftPanel.classList.contains('show-chats')) {
         const character = state.characters.find(c => c.id === state.activeCharacterId);
@@ -668,15 +686,17 @@ export async function handleDeleteActiveCharacter() {
         delete state.chatHistories[charIdToDelete];
         delete state.longTermMemories[charIdToDelete];
         delete state.chatMetadatas[charIdToDelete];
-        
+        // ✅ 添加：清理場景資料
+        delete state.sceneStates[charIdToDelete];
+
         await deleteCharacter(charIdToDelete);
         await deleteAllChatDataForChar(charIdToDelete);
-        
+
         state.activeCharacterId = null;
         state.activeChatId = null;
         await saveSettings();
-        
-        showCharacterListView(); 
+
+        showCharacterListView();
         renderActiveChat();
         renderCharacterList();
     }
@@ -688,7 +708,7 @@ export async function handleToggleCharacterLove(charId) {
     if (char) {
         char.loved = !char.loved;
         await saveCharacter(char);
-        
+
         renderCharacterList();
 
         if (state.activeCharacterId === charId) {
@@ -716,7 +736,7 @@ export async function handleCharacterDropSort(draggedId, targetId) {
 
     for (let i = 0; i < sortedChars.length; i++) {
         const charToUpdate = state.characters.find(c => c.id === sortedChars[i].id);
-        if(charToUpdate) {
+        if (charToUpdate) {
             charToUpdate.order = i;
             await saveCharacter(charToUpdate);
         }
@@ -745,10 +765,10 @@ export async function handleChatSessionDropSort(draggedId, targetId) {
     if (originalIndex > -1) {
         sessionsArray.splice(originalIndex, 1);
     }
-    
+
     // Find the target index to insert the dragged item
-    const targetIndex = targetId 
-        ? sessionsArray.findIndex(s => s.id === targetId) 
+    const targetIndex = targetId
+        ? sessionsArray.findIndex(s => s.id === targetId)
         : sessionsArray.length;
     sessionsArray.splice(targetIndex, 0, { id: draggedId, ...draggedItem });
 
@@ -759,7 +779,7 @@ export async function handleChatSessionDropSort(draggedId, targetId) {
             metadatas[sessionId].order = i;
         }
     }
-    
+
     // Save the updated metadata and re-render the list
     await saveAllChatMetadatasForChar(state.activeCharacterId);
     renderChatSessionList();
@@ -772,15 +792,16 @@ export async function handleChatSessionDropSort(draggedId, targetId) {
 
 export function makeMessageEditable(row, index) {
     const currentlyEditing = document.querySelector('.is-editing');
-    if (currentlyEditing) { 
+    if (currentlyEditing) {
         renderChatMessages();
     }
 
     const bubble = row.querySelector('.chat-bubble');
     const bubbleContainer = row.querySelector('.bubble-container');
+
     const msg = state.chatHistories[state.activeCharacterId][state.activeChatId][index];
     const originalText = (msg.role === 'assistant') ? msg.content[msg.activeContentIndex] : msg.content;
-    
+
     row.classList.add('is-editing');
     bubble.style.display = 'none';
     row.querySelector('.message-timestamp').style.display = 'none';
@@ -798,12 +819,12 @@ export function makeMessageEditable(row, index) {
             <button class="action-btn primary edit-save-btn">儲存</button>
         </div>
     `;
-    
+
     const textarea = editContainer.querySelector('.edit-textarea');
     textarea.value = originalText;
-    
+
     bubbleContainer.appendChild(editContainer);
-    
+
     const autoResize = () => { textarea.style.height = 'auto'; textarea.style.height = `${textarea.scrollHeight}px`; };
     textarea.addEventListener('input', autoResize);
     autoResize();
@@ -940,17 +961,17 @@ export async function handleSaveGlobalSettings() {
         theme: DOM.themeSelect.value,
         summarizationPrompt: DOM.summarizationPromptInput.value.trim()
     };
-    
+
     applyTheme(state.globalSettings.theme);
-    
+
     // 儲存設定但不重新載入狀態
     await saveSettings();
-    
+
     console.log('儲存設定後的狀態:', {
         activeCharacterId: state.activeCharacterId,
         activeChatId: state.activeChatId
     });
-    
+
     // 關閉設定視窗
     toggleModal('global-settings-modal', false);
 
@@ -966,7 +987,7 @@ export async function handleSaveGlobalSettings() {
                 modelDisplayName = modelObject.name;
             }
         }
-        
+
         DOM.chatHeaderModelName.textContent = modelDisplayName;
         DOM.chatHeaderModelName.title = modelDisplayName;
     }
@@ -991,7 +1012,7 @@ export function handleImportPromptSet() {
                 const newPromptSet = PromptManager.parsePromptSetFile(e.target.result, file.name);
                 state.promptSets.push(newPromptSet);
                 await savePromptSet(newPromptSet);
-                
+
                 state.activePromptSetId = newPromptSet.id;
                 await saveSettings();
 
@@ -1031,7 +1052,7 @@ export function handleExportPromptSet() {
         identifier: p.identifier,
         enabled: p.enabled
     }));
-    
+
     const exportData = {
         prompts: exportPrompts,
         prompt_order: [
@@ -1066,7 +1087,7 @@ export async function handleAddPromptSet() {
 
     state.promptSets.push(newPromptSet);
     await savePromptSet(newPromptSet);
-    
+
     state.activePromptSetId = newPromptSet.id;
     await saveSettings();
 
@@ -1133,14 +1154,14 @@ export function openPromptEditor(identifier) {
     DOM.promptEditorNameInput.value = prompt.name;
     DOM.promptEditorRoleSelect.value = prompt.role || 'system';
     DOM.promptEditorContentInput.value = prompt.content;
-    
+
     const position = prompt.position || { type: 'relative', depth: 4 };
     DOM.promptEditorPositionSelect.value = position.type;
     DOM.promptEditorDepthInput.value = position.depth ?? 4;
     DOM.promptEditorOrderInput.value = prompt.order ?? 0;
-    
+
     handlePromptPositionChange();
-    
+
     toggleModal('prompt-editor-modal', true);
 }
 
@@ -1154,7 +1175,7 @@ export async function handleSavePrompt() {
         prompt.name = DOM.promptEditorNameInput.value.trim();
         prompt.role = DOM.promptEditorRoleSelect.value;
         prompt.content = DOM.promptEditorContentInput.value;
-        
+
         prompt.position = {
             type: DOM.promptEditorPositionSelect.value,
             depth: parseInt(DOM.promptEditorDepthInput.value, 10) || 4
@@ -1215,7 +1236,7 @@ export async function handleAddPromptItem() {
     activeSet.prompts.push(newPrompt);
     await savePromptSet(activeSet);
     renderPromptList();
-    
+
     // 為新提示詞打開編輯器
     openPromptEditor(newPrompt.identifier);
 }
@@ -1240,12 +1261,12 @@ export async function handlePromptDropSort(draggedIdentifier, targetIdentifier) 
     const originalIndex = setToUpdate.prompts.findIndex(p => p.identifier === draggedIdentifier);
     setToUpdate.prompts.splice(originalIndex, 1);
 
-    const targetIndex = targetIdentifier 
+    const targetIndex = targetIdentifier
         ? setToUpdate.prompts.findIndex(p => p.identifier === targetIdentifier)
         : setToUpdate.prompts.length;
 
     setToUpdate.prompts.splice(targetIndex, 0, draggedItem);
-    
+
     // Re-index the order property for all items to ensure it's sequential and clean
     setToUpdate.prompts.forEach((p, index) => {
         p.order = index;
@@ -1274,7 +1295,7 @@ export async function handleAddNewLorebook() {
     };
     state.lorebooks.push(newLorebook);
     await saveLorebook(newLorebook);
-    
+
     renderLorebookList();
 }
 
@@ -1290,10 +1311,10 @@ export function handleImportLorebook() {
         reader.onload = async (e) => {
             try {
                 const newLorebook = LorebookManager.parseLorebookFile(e.target.result, file.name);
-                
+
                 state.lorebooks.push(newLorebook);
                 await saveLorebook(newLorebook);
-                
+
                 renderLorebookList();
                 alert(`世界書 "${newLorebook.name}" 匯入成功！您可以手動啟用它。`);
             } catch (error) {
@@ -1374,7 +1395,7 @@ export function openLorebookEditor(entryId = null) {
         DOM.lorebookEntryKeywordsInput.value = (entry.keywords || []).join(', ');
         DOM.lorebookEntrySecondaryKeywordsInput.value = (entry.secondaryKeywords || []).join(', ');
         DOM.lorebookEntryContentInput.value = entry.content;
-        
+
         // 進階設定
         DOM.lorebookEntryTriggerSelect.value = entry.constant ? 'constant' : 'keyword';
         DOM.lorebookEntryLogicSelect.value = entry.logic || 0;
@@ -1393,14 +1414,14 @@ export function openLorebookEditor(entryId = null) {
         DOM.lorebookEntryKeywordsInput.value = '';
         DOM.lorebookEntrySecondaryKeywordsInput.value = '';
         DOM.lorebookEntryContentInput.value = '';
-        
+
         // 重設進階設定為預設值
         DOM.lorebookEntryTriggerSelect.value = 'keyword';
         DOM.lorebookEntryLogicSelect.value = 0;
         DOM.lorebookEntryPositionSelect.value = 'before_char';
         DOM.lorebookEntryOrderInput.value = 100;
         DOM.lorebookEntryDepthInput.value = 4;
-        
+
         DOM.matchCharDescCheckbox.checked = false;
         DOM.matchScenarioCheckbox.checked = false;
         DOM.matchCreatorNotesCheckbox.checked = false;
@@ -1561,7 +1582,7 @@ export async function handleSaveUserPersona() {
         state.userPersonas.push(newPersona);
         await saveUserPersona(newPersona);
     }
-    
+
     loadGlobalSettingsToUI();
     toggleModal('user-persona-editor-modal', false);
 }
@@ -1604,12 +1625,12 @@ export function openMemoryEditor() {
     }
     const memory = state.longTermMemories[state.activeCharacterId]?.[state.activeChatId] || '尚無長期記憶。';
     DOM.memoryEditorTextarea.value = memory;
-    
+
     try {
         // 預設進入預覽模式
         const markdownText = DOM.memoryEditorTextarea.value;
         const htmlContent = safeRenderMarkdown(markdownText);
-        
+
         DOM.memoryMarkdownPreview.innerHTML = htmlContent;
         DOM.memoryEditorTextarea.classList.add('hidden');
         DOM.memoryMarkdownPreview.classList.remove('hidden');
@@ -1624,13 +1645,13 @@ export function openMemoryEditor() {
             DOM.toggleMemoryPreviewBtn.innerHTML = '<i class="fa-solid fa-eye"></i> 預覽 Markdown';
         }
     }
-    
+
     toggleModal('memory-editor-modal', true);
 }
 
 export function handleToggleMemoryPreview() {
     const isPreviewing = !DOM.memoryMarkdownPreview.classList.contains('hidden');
-    
+
     if (isPreviewing) {
         // 切換回編輯模式
         DOM.memoryMarkdownPreview.classList.add('hidden');
@@ -1643,7 +1664,7 @@ export function handleToggleMemoryPreview() {
         try {
             const markdownText = DOM.memoryEditorTextarea.value;
             const htmlContent = safeRenderMarkdown(markdownText);
-            
+
             DOM.memoryMarkdownPreview.innerHTML = htmlContent;
             DOM.memoryEditorTextarea.classList.add('hidden');
             DOM.memoryMarkdownPreview.classList.remove('hidden');
@@ -1675,14 +1696,14 @@ export async function handleUpdateMemory() {
         return;
     }
     if (!state.activeCharacterId || !state.activeChatId) { alert('請先選擇一個對話。'); return; }
-    
+
     const history = state.chatHistories[state.activeCharacterId][state.activeChatId];
     if (history.length < 4) { alert('對話太短，無法生成有意義的記憶。'); return; }
-    
+
     DOM.updateMemoryBtn.textContent = '記憶生成中...';
     DOM.updateMemoryBtn.disabled = true;
     setGeneratingState(true, false);
-    
+
     try {
         const MAX_SUMMARY_HISTORY_TOKENS = 28000;
         let tokens = 0;
@@ -1693,7 +1714,7 @@ export async function handleUpdateMemory() {
             const content = (msg.role === 'assistant' && Array.isArray(msg.content))
                 ? msg.content[msg.activeContentIndex]
                 : msg.content;
-            
+
             const messageTokens = (content || '').length;
 
             if (tokens + messageTokens > MAX_SUMMARY_HISTORY_TOKENS) {
@@ -1705,21 +1726,21 @@ export async function handleUpdateMemory() {
         }
 
         const conversationText = truncatedHistory.map(m => `${m.role}: ${m.role === 'assistant' ? m.content[m.activeContentIndex] : m.content}`).join('\n');
-        
+
         let userPrompt = state.globalSettings.summarizationPrompt;
         if (!userPrompt) {
             throw new Error("在全域設定中找不到 'summarizationPrompt'。");
         }
-        
+
         const summaryPrompt = userPrompt.replace('{{conversation}}', conversationText);
-        
+
         const provider = state.globalSettings.apiProvider || 'openai';
         let summaryMessages;
 
         // [FIX] Correctly format payload for each provider
         if (provider === 'google') {
             const contents = [{ role: 'user', parts: [{ text: summaryPrompt }] }];
-            summaryMessages = { 
+            summaryMessages = {
                 contents: contents,
                 systemInstruction: { parts: [{ text: 'You are a summarization expert.' }] }
             };
@@ -1728,9 +1749,9 @@ export async function handleUpdateMemory() {
         } else { // This now includes 'official_gemini', 'openai', etc.
             summaryMessages = [{ role: 'system', content: 'You are a summarization expert.' }, { role: 'user', content: summaryPrompt }];
         }
-        
+
         const summary = await callApi(summaryMessages, true);
-        
+
         if (!state.longTermMemories[state.activeCharacterId]) {
             state.longTermMemories[state.activeCharacterId] = {};
         }
@@ -1778,8 +1799,8 @@ export function handleImportChat() {
         reader.onload = async (e) => {
             try {
                 const jsonObjects = parseChatLogFile(e.target.result);
-                
-                const meta = jsonObjects.shift(); 
+
+                const meta = jsonObjects.shift();
                 if (!meta || !meta.user_name || !meta.character_name) {
                     throw new Error('檔案格式不符，缺少元數據。');
                 }
@@ -1792,7 +1813,7 @@ export function handleImportChat() {
                     } else {
                         item.timestamp = date.toISOString();
                     }
-                    
+
                     return {
                         role: item.is_user ? 'user' : 'assistant',
                         content: item.is_user ? item.mes : (item.swipes || [item.mes]),
@@ -1819,8 +1840,21 @@ export function handleImportChat() {
                         await saveAllLongTermMemoriesForChar(state.activeCharacterId);
                     }
 
+                    // [新增] 恢復場景地圖 (如果存在)
+                    if (meta.scene_map) {
+                        if (!state.sceneStates[state.activeCharacterId]) {
+                            state.sceneStates[state.activeCharacterId] = {};
+                        }
+                        state.sceneStates[state.activeCharacterId][state.activeChatId] = meta.scene_map;
+                        await saveAllSceneStatesForChar(state.activeCharacterId);
+                    }
+
                     renderChatMessages();
-                    alert('對話紀錄匯入成功！' + (meta.long_term_memory ? '（包含長期記憶）' : ''));
+                    const importedExtras = [];
+                    if (meta.long_term_memory) importedExtras.push('長期記憶');
+                    if (meta.scene_map) importedExtras.push('場景地圖');
+                    const extrasText = importedExtras.length > 0 ? `（包含${importedExtras.join('、')}）` : '';
+                    alert('對話紀錄匯入成功！' + extrasText);
                 }
             } catch (error) {
                 console.error("匯入聊天紀錄失敗:", error);
@@ -1857,7 +1891,7 @@ export async function handleConfirmExport() {
 
 export function handleToggleScreenshotMode() {
     tempState.isScreenshotMode = !tempState.isScreenshotMode;
-    
+
     DOM.chatWindow.classList.toggle('screenshot-mode', tempState.isScreenshotMode);
     DOM.messageInputContainer.classList.toggle('hidden', tempState.isScreenshotMode);
     DOM.screenshotToolbar.classList.toggle('hidden', !tempState.isScreenshotMode);
@@ -1879,7 +1913,7 @@ export function handleSelectMessage(index) {
     } else {
         tempState.selectedMessageIndices.push(index);
     }
-    
+
     DOM.screenshotInfoText.textContent = `已選擇 ${tempState.selectedMessageIndices.length} 則訊息`;
     const messageRow = DOM.chatWindow.querySelector(`.message-row[data-index="${index}"]`);
     if (messageRow) {
@@ -1894,7 +1928,7 @@ export async function handleGenerateScreenshot() {
     }
 
     DOM.loadingOverlay.classList.remove('hidden');
-    
+
     const screenshotContainer = document.createElement('div');
     screenshotContainer.style.backgroundColor = getComputedStyle(DOM.chatWindow).backgroundColor;
     screenshotContainer.style.padding = '20px';
@@ -1904,7 +1938,7 @@ export async function handleGenerateScreenshot() {
     screenshotContainer.style.top = '0';
 
     const sortedIndices = [...tempState.selectedMessageIndices].sort((a, b) => a - b);
-    
+
     sortedIndices.forEach(index => {
         const originalMessageNode = DOM.chatWindow.querySelector(`.message-row[data-index="${index}"]`);
         if (originalMessageNode) {
@@ -1957,6 +1991,7 @@ export async function handleGlobalExport() {
         const chatHistories = await db.getAll('chatHistories');
         const longTermMemories = await db.getAll('longTermMemories');
         const chatMetadatas = await db.getAll('chatMetadatas');
+        const sceneStates = await db.getAll('sceneStates'); // [新增] 場景地圖
         const userPersonas = await db.getAll('userPersonas');
         const promptSets = await db.getAll('promptSets');
         const lorebooks = await db.getAll('lorebooks');
@@ -1982,12 +2017,13 @@ export async function handleGlobalExport() {
         }
 
         const allData = {
-            version: "2.0",
+            version: "2.1", // [更新] 版本號，因為新增了場景地圖
             exportDate: new Date().toISOString(),
             characters,
             chatHistories,
             longTermMemories,
             chatMetadatas,
+            sceneStates, // [新增] 場景地圖資料
             userPersonas,
             promptSets,
             lorebooks,
@@ -2010,7 +2046,7 @@ export async function handleGlobalExport() {
 }
 
 export function handleGlobalImport(mode) {
-    const confirmationMessage = mode === 'overwrite' 
+    const confirmationMessage = mode === 'overwrite'
         ? '警告：覆蓋匯入將會完全清除您目前所有的資料。此操作無法復原。您確定要繼續嗎？'
         : '合併匯入將會加入新的資料，但不會覆蓋任何現有項目。您確定要繼續嗎？';
 
@@ -2036,8 +2072,8 @@ export function handleGlobalImport(mode) {
                 }
 
                 DOM.loadingOverlay.classList.remove('hidden');
-                
-                const storesToProcess = ['characters', 'chatHistories', 'longTermMemories', 'chatMetadatas', 'userPersonas', 'promptSets', 'lorebooks', 'keyValueStore'];
+
+                const storesToProcess = ['characters', 'chatHistories', 'longTermMemories', 'chatMetadatas', 'sceneStates', 'userPersonas', 'promptSets', 'lorebooks', 'keyValueStore'];
 
                 if (mode === 'overwrite') {
                     for (const storeName of storesToProcess) {
@@ -2048,9 +2084,9 @@ export function handleGlobalImport(mode) {
                             }
                         }
                     }
-                } else { 
+                } else {
                     for (const storeName of storesToProcess) {
-                         if (importedData[storeName]) {
+                        if (importedData[storeName]) {
                             const existingItems = await db.getAll(storeName);
                             const keyPath = storeName === 'keyValueStore' ? 'key' : 'id';
                             const existingIds = new Set(existingItems.map(item => item[keyPath]));
@@ -2145,7 +2181,7 @@ export async function handleAdvancedImport(importBoth) {
         alert("匯入錯誤：找不到角色卡資料。");
         return;
     }
-    
+
     toggleModal('advanced-import-modal', false);
 
     if (importBoth) {
@@ -2177,7 +2213,7 @@ export async function handleAdvancedImport(importBoth) {
                     position: entry.position || 'before_char',
                     scanDepth: entry.depth || 4,
                     logic: entry.selectiveLogic || 0,
-                    constant: !!entry.constant, 
+                    constant: !!entry.constant,
                     matchSources: [], // Start with empty and populate below
                 }));
 
@@ -2191,7 +2227,7 @@ export async function handleAdvancedImport(importBoth) {
                 state.lorebooks.push(newLorebook);
                 await saveLorebook(newLorebook);
                 renderLorebookList(); // 匯入後立刻刷新列表
-                
+
                 if (confirm(`已成功匯入新的世界書「${bookName}」。\n\n您是否要立刻將其設為啟用狀態？`)) {
                     bookToActivateId = newLorebook.id;
                 }
@@ -2199,7 +2235,7 @@ export async function handleAdvancedImport(importBoth) {
 
             if (bookToActivateId) {
                 const book = state.lorebooks.find(b => b.id === bookToActivateId);
-                if(book) {
+                if (book) {
                     book.enabled = true;
                     await saveLorebook(book);
                     renderLorebookList(); // 啟用後再次刷新列表
@@ -2225,7 +2261,7 @@ export async function handleAdvancedImport(importBoth) {
             alert(`已成功將一條來自「${data.name}」的正規表達式規則新增至您的設定中。`);
         }
     }
-    
+
     populateEditorFields(importedData, importedImageBase64);
 
     // 清空暫存資料
@@ -2234,4 +2270,627 @@ export async function handleAdvancedImport(importBoth) {
     tempState.importedRegex = null;
     tempState.importedImageBase64 = null;
 }
+
+// ===================================================================================
+// 場景地圖 (Scene Map) 處理函式 - 每個聊天室獨立
+// ===================================================================================
+
+/**
+ * 打開場景地圖編輯器
+ */
+export function openSceneMapEditor() {
+    if (!state.activeCharacterId || !state.activeChatId) {
+        alert('請先選擇角色並開始聊天');
+        return;
+    }
+
+    // 如果當前聊天室沒有場景地圖，自動初始化
+    const existing = SceneMapManager.getActiveSceneMap();
+    if (!existing) {
+        SceneMapManager.initSceneMapForCurrentChat();
+    }
+
+    // [NEW] 保存進入編輯器時的快照（深拷貝）
+    const currentSceneMap = SceneMapManager.getActiveSceneMap();
+    tempState.sceneSessionSnapshot = JSON.parse(JSON.stringify(currentSceneMap));
+
+    renderSceneTree();
+    toggleModal('scene-map-editor-modal', true);
+}
+
+/**
+ * 復原到進入編輯器時的狀態
+ */
+export async function handleUndoSession() {
+    if (!state.activeCharacterId || !state.activeChatId) return;
+
+    if (!tempState.sceneSessionSnapshot) {
+        alert('沒有可復原的快照');
+        return;
+    }
+
+    if (confirm('確定要復原至進入編輯器時的狀態嗎？這將會捨棄本次編輯的所有修改。')) {
+        // 復原快照
+        SceneMapManager.setActiveSceneMap(tempState.sceneSessionSnapshot);
+        await saveAllSceneStatesForChar(state.activeCharacterId);
+
+        // 重新渲染
+        renderSceneTree();
+        alert('已復原至進入時狀態！');
+    }
+}
+
+/**
+ * 重置當前聊天室的場景地圖
+ */
+export async function handleResetSceneMap() {
+    if (!state.activeCharacterId || !state.activeChatId) return;
+
+    if (confirm('確定要重置當前聊天室的場景地圖嗎？這將會清除所有場景資料。')) {
+        const defaultMap = SceneMapManager.createDefaultSceneMap();
+        SceneMapManager.setActiveSceneMap(defaultMap);
+        await saveAllSceneStatesForChar(state.activeCharacterId);
+
+        renderSceneTree();
+        alert('場景地圖已重置！');
+    }
+}
+
+/**
+ * 開啟場景節點編輯器
+ */
+export function openSceneNodeEditor(nodeId = null, parentId = null) {
+    tempState.editingSceneNodeId = nodeId;
+    tempState.editingSceneNodeParentId = parentId;
+
+    const sceneMap = SceneMapManager.getActiveSceneMap();
+    if (!sceneMap) {
+        alert('找不到場景地圖');
+        return;
+    }
+
+    if (nodeId) {
+        // 編輯現有節點
+        const node = sceneMap.nodes[nodeId];
+        if (!node) {
+            alert('找不到要編輯的節點');
+            return;
+        }
+
+        DOM.sceneNodeEditorTitle.textContent = '編輯場景節點';
+        DOM.sceneNodeNameInput.value = node.name;
+        DOM.sceneNodeTypeSelect.value = node.type;
+        DOM.sceneNodeDescriptionInput.value = node.description || '';
+        DOM.sceneNodeKeywordsInput.value = (node.keywords || []).join(', ');
+        DOM.deleteSceneNodeBtn.style.display = 'block';
+    } else {
+        // 新增節點
+        DOM.sceneNodeEditorTitle.textContent = '新增場景節點';
+        DOM.sceneNodeNameInput.value = '';
+        DOM.sceneNodeTypeSelect.value = 'location';
+        DOM.sceneNodeDescriptionInput.value = '';
+        DOM.sceneNodeKeywordsInput.value = '';
+        DOM.deleteSceneNodeBtn.style.display = 'none';
+    }
+
+    toggleModal('scene-node-editor-modal', true);
+}
+
+/**
+ * 儲存場景節點
+ */
+export async function handleSaveSceneNode() {
+    const nodeId = tempState.editingSceneNodeId;
+    const parentId = tempState.editingSceneNodeParentId;
+
+    // 解析關鍵字
+    const keywordsText = DOM.sceneNodeKeywordsInput.value.trim();
+    const keywords = keywordsText
+        ? keywordsText.split(',').map(k => k.trim()).filter(k => k)
+        : [];
+
+    const nodeData = {
+        name: DOM.sceneNodeNameInput.value.trim(),
+        type: DOM.sceneNodeTypeSelect.value,
+        description: DOM.sceneNodeDescriptionInput.value.trim(),
+        keywords: keywords
+    };
+
+    if (!nodeData.name) {
+        alert('請輸入節點名稱');
+        return;
+    }
+
+    if (nodeId) {
+        // 更新現有節點
+        SceneMapManager.updateNode(nodeId, nodeData);
+    } else {
+        // 新增節點
+        SceneMapManager.addNode(parentId, nodeData);
+    }
+
+    renderSceneTree();
+    toggleModal('scene-node-editor-modal', false);
+    tempState.editingSceneNodeId = null;
+    tempState.editingSceneNodeParentId = null;
+}
+
+/**
+ * 刪除場景節點
+ */
+export async function handleDeleteSceneNode() {
+    if (!tempState.editingSceneNodeId) return;
+
+    const sceneMap = SceneMapManager.getActiveSceneMap();
+    if (!sceneMap) return;
+
+    const node = sceneMap.nodes[tempState.editingSceneNodeId];
+    if (!node) return;
+
+    if (confirm(`確定要刪除節點 "${node.name}" 嗎？這將會同時刪除其所有子節點。`)) {
+        SceneMapManager.deleteNode(tempState.editingSceneNodeId);
+
+        renderSceneTree();
+        toggleModal('scene-node-editor-modal', false);
+        tempState.editingSceneNodeId = null;
+        tempState.editingSceneNodeParentId = null;
+    }
+}
+
+/**
+ * 觸發 AI 輔助場景分析
+ */
+export async function handleAiSceneAnalysis() {
+    if (!state.activeCharacterId || !state.activeChatId) {
+        alert('請先選擇角色並開始聊天');
+        return;
+    }
+
+    // 檢查 API Key 是否設置
+    if (!state.globalSettings.apiKey) {
+        alert('請先在「全域設定」中設置 API Key');
+        return;
+    }
+
+    const chatHistory = state.chatHistories[state.activeCharacterId][state.activeChatId];
+    if (!chatHistory || chatHistory.length < 2) {
+        alert('對話內容太少，無法進行場景分析');
+        return;
+    }
+
+    // 顯示載入狀態
+    showLoadingIndicator('AI 正在分析場景變化...');
+
+    try {
+        // 傳入完整的 chatHistory，讓 analyzeSceneChanges 自行處理截斷
+        const analysis = await API.analyzeSceneChanges(chatHistory);
+
+        hideLoadingIndicator();
+
+        if (analysis.hasChanges && analysis.changes.length > 0) {
+            // 暫存分析結果
+            tempState.pendingSceneUpdates = analysis.changes;
+
+            // 顯示確認彈窗
+            showSceneUpdateConfirmModal(analysis.changes);
+        } else {
+            alert('AI 分析結果：目前對話沒有需要更新的場景狀態。');
+        }
+
+    } catch (error) {
+        hideLoadingIndicator();
+        console.error('場景分析失敗:', error);
+
+        // 更友好的錯誤提示
+        let errorMessage = error.message;
+        if (error.message.includes('401') || error.message.includes('認證')) {
+            errorMessage = 'API 認證失敗，請檢查您的 API Key 是否正確';
+        } else if (error.message.includes('404')) {
+            errorMessage = 'API 端點不存在，請檢查模型名稱是否正確，或 API 供應商設定是否有誤';
+        } else if (error.message.includes('429')) {
+            errorMessage = 'API 請求次數超過限制，請稍後再試';
+        } else if (error.message.includes('500') || error.message.includes('503')) {
+            errorMessage = 'API 服務暫時無法使用，請稍後再試';
+        } else if (error.message.includes('請先設定 API Key')) {
+            errorMessage = '請先在「全域設定」中設置 API Key';
+        } else if (error.message.includes('沒有使用此模型的權限')) {
+            errorMessage = '您沒有使用此模型的權限，請先登入或切換到其他 API 供應商';
+        } else if (error.message.includes('使用者未登入')) {
+            errorMessage = '請先登入以使用此功能';
+        }
+
+        alert(`場景分析失敗：${errorMessage}`);
+    }
+}
+
+/**
+ * 顯示場景更新確認彈窗
+ */
+/**
+ * 顯示場景更新確認彈窗
+ */
+function showSceneUpdateConfirmModal(changes) {
+    const modal = document.getElementById('scene-update-confirm-modal');
+    const changesList = document.getElementById('scene-updates-list');
+
+    if (!modal || !changesList) return;
+
+    // 生成變更列表
+    changesList.innerHTML = changes.map((change, index) => {
+        let content = '';
+        let badge = '';
+
+        if (change.type === 'add') {
+            badge = '<span class="badge badge-success">新增</span>';
+            content = `
+                <div class="scene-update-details">
+                    <p><strong>新增節點：</strong> ${change.name} (${change.nodeType})</p>
+                    <p><strong>描述：</strong> ${change.description}</p>
+                    <p class="scene-update-reason"><em>原因：${change.reason}</em></p>
+                </div>
+            `;
+        } else {
+            badge = '<span class="badge badge-warning">更新</span>';
+            content = `
+                <div class="scene-update-details">
+                    <p><strong>描述更新：</strong></p>
+                    <div class="description-diff">
+                        <div class="description-before">
+                            <small>目前：</small>
+                            <p>${change.currentDescription || '（無描述）'}</p>
+                        </div>
+                        <div class="description-arrow">→</div>
+                        <div class="description-after">
+                            <small>建議：</small>
+                            <p>${change.newDescription}</p>
+                        </div>
+                    </div>
+                    <p class="scene-update-reason"><em>原因：${change.reason}</em></p>
+                </div>
+            `;
+        }
+
+        return `
+        <div class="scene-update-item">
+            <div class="scene-update-header">
+                <input type="checkbox" id="scene-update-${index}" checked>
+                <label for="scene-update-${index}">
+                    ${badge}
+                    <strong>${change.nodeName || change.name}</strong>
+                </label>
+            </div>
+            ${content}
+        </div>
+        `;
+    }).join('');
+
+    toggleModal('scene-update-confirm-modal', true);
+}
+
+/**
+ * 應用選中的場景更新
+ */
+export async function applySelectedSceneUpdates() {
+    if (!tempState.pendingSceneUpdates) return;
+
+    const changes = tempState.pendingSceneUpdates;
+    const changesList = document.getElementById('scene-updates-list');
+
+    if (!changesList) return;
+
+    let appliedCount = 0;
+
+    // 遍歷所有變更，應用被勾選的
+    changes.forEach((change, index) => {
+        const checkbox = document.getElementById(`scene-update-${index}`);
+        if (checkbox && checkbox.checked) {
+            let success = false;
+
+            if (change.type === 'add') {
+                // 處理新增節點
+                const newNode = SceneMapManager.addNode(change.parentId, {
+                    name: change.name,
+                    type: change.nodeType,
+                    description: change.description,
+                    keywords: change.keywords || []
+                });
+                success = !!newNode;
+            } else {
+                // 處理更新節點
+                success = SceneMapManager.updateNode(change.nodeId, {
+                    description: change.newDescription
+                });
+            }
+
+            if (success) appliedCount++;
+        }
+    });
+
+    // 清空暫存
+    tempState.pendingSceneUpdates = null;
+
+    // 關閉彈窗
+    toggleModal('scene-update-confirm-modal', false);
+
+    // 如果場景編輯器開啟中，重新渲染
+    const sceneModal = document.getElementById('scene-map-editor-modal');
+    if (sceneModal && !sceneModal.classList.contains('hidden')) {
+        renderSceneTree();
+    }
+
+    alert(`已成功更新 ${appliedCount} 個場景節點！`);
+}
+
+/**
+ * 取消場景更新
+ */
+export function cancelSceneUpdates() {
+    tempState.pendingSceneUpdates = null;
+    toggleModal('scene-update-confirm-modal', false);
+}
+
+/**
+ * AI 輔助建議節點關鍵字
+ */
+export async function handleAiSuggestKeywords() {
+    const nodeName = DOM.sceneNodeNameInput.value.trim();
+    const nodeDescription = DOM.sceneNodeDescriptionInput.value.trim();
+    const nodeType = DOM.sceneNodeTypeSelect.value;
+
+    if (!nodeName) {
+        alert('請先輸入節點名稱');
+        return;
+    }
+
+    // 檢查 API Key 是否設置
+    if (!state.globalSettings.apiKey) {
+        alert('請先在「全域設定」中設置 API Key');
+        return;
+    }
+
+    showLoadingIndicator('AI 正在生成關鍵字建議...');
+
+    try {
+        // 建構提示詞
+        const prompt = `你是一個場景關鍵字生成助手。根據以下場景節點資訊，生成 3-5 個相關的觸發關鍵字（中文）。
+
+節點名稱：${nodeName}
+節點類型：${nodeType === 'location' ? '地點' : nodeType === 'container' ? '容器' : '物品'}
+${nodeDescription ? `描述：${nodeDescription}` : ''}
+
+請生成能觸發這個場景的關鍵字。例如：
+- 如果節點是「海邊」，關鍵字可能是：海邊, 沙灘, 海, 海灘, 游泳
+- 如果節點是「圖書館」，關鍵字可能是：圖書館, 書, 閱讀, 看書, 借書
+
+只回傳關鍵字列表，用逗號分隔，不要其他解釋文字。`;
+
+        const apiProvider = state.globalSettings.apiProvider || "openai";
+        const model = state.globalSettings.model || "gpt-4o-mini";
+        const apiKey = state.globalSettings.apiKey || "";
+
+        const messages = [{ role: "user", content: prompt }];
+
+        let result;
+
+        // 調用 API（簡化版，類似場景分析）
+        switch (apiProvider) {
+            case "openai":
+            case "openrouter":
+            case "xai":
+            case "mistral": {
+                const endpoint = getApiEndpoint(apiProvider);
+                const response = await fetch(endpoint, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: model,
+                        messages: messages,
+                        temperature: 0.7,
+                        max_tokens: 200
+                    })
+                });
+
+                if (!response.ok) throw new Error(`API 錯誤: ${response.status}`);
+                const data = await response.json();
+                result = data.choices[0].message.content;
+                break;
+            }
+
+            case "anthropic": {
+                const response = await fetch("https://api.anthropic.com/v1/messages", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "x-api-key": apiKey,
+                        "anthropic-version": "2023-06-01"
+                    },
+                    body: JSON.stringify({
+                        model: model,
+                        messages: messages,
+                        temperature: 0.7,
+                        max_tokens: 200
+                    })
+                });
+
+                if (!response.ok) throw new Error(`API 錯誤: ${response.status}`);
+                const data = await response.json();
+                result = data.content[0].text;
+                break;
+            }
+
+            case "google": {
+                const response = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+                    {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: prompt }] }],
+                            generationConfig: {
+                                temperature: 0.7,
+                                maxOutputTokens: 200
+                            }
+                        })
+                    }
+                );
+
+                if (!response.ok) throw new Error(`API 錯誤: ${response.status}`);
+                const data = await response.json();
+                result = data.candidates[0].content.parts[0].text;
+                break;
+            }
+
+            default:
+                throw new Error("不支援的 API 供應商");
+        }
+
+        hideLoadingIndicator();
+
+        // 清理結果
+        result = result.trim().replace(/^[：:,，\s]+|[：:,，\s]+$/g, '');
+
+        // 填入關鍵字欄位
+        DOM.sceneNodeKeywordsInput.value = result;
+
+    } catch (error) {
+        hideLoadingIndicator();
+        console.error('關鍵字生成失敗:', error);
+        alert(`關鍵字生成失敗：${error.message}`);
+    }
+}
+
+// 輔助函數：獲取 API 端點
+function getApiEndpoint(provider) {
+    const endpoints = {
+        "openai": "https://api.openai.com/v1/chat/completions",
+        "openrouter": "https://openrouter.ai/api/v1/chat/completions",
+        "xai": "https://api.x.ai/v1/chat/completions",
+        "mistral": "https://api.mistral.ai/v1/chat/completions"
+    };
+    return endpoints[provider] || endpoints["openai"];
+}
+
+// ===================================================================================
+// 場景關鍵字映射管理
+// ===================================================================================
+
+/**
+ * 添加新的關鍵字映射
+ */
+export function handleAddKeywordMapping() {
+    const keyword = prompt('請輸入關鍵字（例如：吃、睡、開車）：');
+    if (!keyword || !keyword.trim()) return;
+
+    const nodeNamesStr = prompt('請輸入對應的節點名稱（英文，用逗號分隔）\n例如：fridge, kitchen, stove');
+    if (!nodeNamesStr || !nodeNamesStr.trim()) return;
+
+    const nodeNames = nodeNamesStr.split(',').map(s => s.trim()).filter(s => s);
+    if (nodeNames.length === 0) {
+        alert('請至少輸入一個節點名稱');
+        return;
+    }
+
+    SceneMapManager.addKeywordMapping(keyword.trim(), nodeNames);
+    renderKeywordMappingList();
+    alert('關鍵字映射已添加！');
+}
+
+/**
+ * 刪除關鍵字映射
+ */
+export function handleDeleteKeywordMapping(keyword) {
+    if (confirm(`確定要刪除關鍵字「${keyword}」的映射嗎？`)) {
+        SceneMapManager.deleteKeywordMapping(keyword);
+        renderKeywordMappingList();
+    }
+}
+
+/**
+ * 重置關鍵字映射為預設值
+ */
+export function handleResetKeywordMappings() {
+    if (confirm('確定要重置為預設的關鍵字映射嗎？這將清除您自訂的映射。')) {
+        SceneMapManager.resetKeywordMappingsToDefault();
+        renderKeywordMappingList();
+        alert('關鍵字映射已重置為預設值！');
+    }
+}
+
+// ===================================================================================
+// Prompt Viewer
+// ===================================================================================
+
+export function handleViewPrompt() {
+    if (!state.activeCharacterId || !state.activeChatId) {
+        alert('請先選擇一個聊天室。');
+        return;
+    }
+
+    try {
+        const messages = buildApiMessages();
+        const formatted = JSON.stringify(messages, null, 2);
+        DOM.viewPromptTextarea.value = formatted;
+        toggleModal('view-prompt-modal', true);
+    } catch (error) {
+        console.error("無法建構 Prompt:", error);
+        alert("無法建構 Prompt: " + error.message);
+    }
+}
+
+export function handleCopyPrompt() {
+    const text = DOM.viewPromptTextarea.value;
+    navigator.clipboard.writeText(text).then(() => {
+        alert('已複製到剪貼簿！');
+    }).catch(err => {
+        console.error('複製失敗:', err);
+        alert('複製失敗，請手動複製。');
+    });
+}
+
+
+/**
+ * 處理匯出場景按鈕點擊
+ */
+export function handleExportSceneBtnClick() {
+    if (!state.activeCharacterId || !state.activeChatId) {
+        alert('請先選擇角色並開始聊天');
+        return;
+    }
+    SceneMapManager.exportSceneData(state.activeCharacterId, state.activeChatId);
+}
+
+/**
+ * 處理匯入場景按鈕點擊
+ */
+export function handleImportSceneBtnClick() {
+    if (!state.activeCharacterId || !state.activeChatId) {
+        alert('請先選擇角色並開始聊天');
+        return;
+    }
+
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        SceneMapManager.importSceneData(file, state.activeCharacterId, state.activeChatId)
+            .then(success => {
+                if (success) {
+                    renderSceneTree();
+                    alert('場景地圖匯入成功！');
+                }
+            })
+            .catch(error => {
+                console.error('匯入失敗:', error);
+                alert(`匯入失敗: ${error.message}`);
+            });
+    };
+    input.click();
+}
+
 

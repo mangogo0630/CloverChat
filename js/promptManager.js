@@ -3,6 +3,7 @@
 
 import { state } from './state.js';
 import { DEFAULT_PROMPT_SET } from './constants.js';
+import * as SceneMapManager from './sceneMapManager.js';
 
 /**
  * @description 解析使用者上傳的 SillyTavern V2 提示詞庫 JSON 檔案
@@ -106,6 +107,25 @@ export function buildFinalMessages(chatHistory) {
         }
     });
     
+    // 獲取最近 5 則訊息用於判斷相關場景
+    const recentMessages = chatHistory.slice(-5);
+    const relevantScenePrompt = SceneMapManager.buildRelevantScenePrompt(recentMessages);
+    
+    // 如果有相關場景，插入到訊息列表中（在角色設定之後）
+    if (relevantScenePrompt) {
+        const sceneMessage = {
+            role: 'system',
+            content: relevantScenePrompt
+        };
+        // 插在第一個 system 訊息之後
+        const firstSystemIndex = finalMessages.findIndex(m => m.role === 'system');
+        if (firstSystemIndex !== -1) {
+            finalMessages.splice(firstSystemIndex + 1, 0, sceneMessage);
+        } else {
+            finalMessages.unshift(sceneMessage);
+        }
+    }
+    
     return finalMessages;
 }
 
@@ -135,6 +155,15 @@ export function replacePlaceholders(text) {
     result = result.replace(/{{scenario}}/g, `${char.scenario || ''}`);
     result = result.replace(/{{exampleDialogue}}/g, `${char.exampleDialogue || ''}`);
     result = result.replace(/{{memory}}/g, `${memory}`);
+    
+    // 新增場景地圖佔位符替換
+    const sceneMap = SceneMapManager.getActiveSceneMap();
+    if (sceneMap) {
+        const sceneText = SceneMapManager.buildScenePromptText();
+        result = result.replace(/{{sceneMap}}/g, sceneText);
+    } else {
+        result = result.replace(/{{sceneMap}}/g, '');
+    }
 
     return result;
 }

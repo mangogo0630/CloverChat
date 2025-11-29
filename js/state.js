@@ -7,15 +7,17 @@ import * as db from './db.js';
 // 應用程式的核心狀態物件
 export let state = {
     currentUser: null,
-    isPremiumUser: false, 
+    isPremiumUser: false,
     isInitialLoad: false,
     characters: [],
-    chatHistories: {}, 
+    chatHistories: {},
     longTermMemories: {},
-    chatMetadatas: {}, 
+    chatMetadatas: {},
+    sceneStates: {}, // 場景狀態：{ charId: { chatId: sceneMapData } }
+    sceneKeywordMap: {}, // 動態關鍵字映射：{ keyword: [nodeNames] }
     userPersonas: [],
-    apiPresets: [], 
-    
+    apiPresets: [],
+
     promptSets: [],
     activePromptSetId: null,
 
@@ -35,7 +37,7 @@ export let tempState = {
     apiCallController: null,
     isScreenshotMode: false,
     selectedMessageIndices: [],
-    editingPromptIdentifier: null, 
+    editingPromptIdentifier: null,
     editingLorebookId: null, // 用於條目編輯視窗
     editingLorebookEntryId: null,
     deletingMessageInfo: null,
@@ -44,6 +46,16 @@ export let tempState = {
     importedLorebook: null,
     importedRegex: null,
     importedImageBase64: null,
+    // 場景地圖編輯狀態
+    editingSceneMapId: null, // 當前編輯的場景地圖 ID
+    editingSceneNodeId: null,
+    editingSceneNodeParentId: null,
+    // 場景地圖收合狀態
+    collapsedSceneNodes: new Set(),
+    // [NEW] 場景編輯會話快照(進入編輯器時的狀態)
+    sceneSessionSnapshot: null,
+    // AI 輔助更新場景的暫存狀態
+    pendingSceneUpdates: null, // { nodeId, updates, message }
 };
 
 /**
@@ -58,6 +70,31 @@ export async function loadStateFromDB() {
         state.activeChatId = settingsData.activeChatId || null;
         state.apiPresets = settingsData.apiPresets || [];
         state.activePromptSetId = settingsData.activePromptSetId || null;
+        state.sceneKeywordMap = settingsData.sceneKeywordMap || {};
+    }
+
+    // 初始化預設關鍵字映射（如果為空）
+    if (Object.keys(state.sceneKeywordMap).length === 0) {
+        state.sceneKeywordMap = {
+            '吃': ['fridge', 'kitchen', 'stove'],
+            '飯': ['fridge', 'kitchen', 'stove'],
+            '煮': ['kitchen', 'stove', 'fridge'],
+            '食物': ['fridge', 'kitchen'],
+            '冰箱': ['fridge'],
+            '睡': ['bedroom', 'bed'],
+            '手機': ['phone'],
+            '洗澡': ['bathroom'],
+            '浴室': ['bathroom'],
+            '家': ['home', 'bedroom', 'kitchen'],
+            '廚房': ['kitchen', 'fridge', 'stove'],
+            '臥室': ['bedroom', 'bed'],
+            '床': ['bed'],
+        };
+    }
+
+    // 初始化 AI 輔助場景更新設定（預設開啟）
+    if (state.globalSettings.enableAiSceneAnalysis === undefined) {
+        state.globalSettings.enableAiSceneAnalysis = true;
     }
 
     // 初始化摘要長度上限 (預設 1000)
@@ -95,7 +132,7 @@ export async function loadStateFromDB() {
     state.characters = await db.getAll('characters');
     state.userPersonas = await db.getAll('userPersonas');
     state.promptSets = await db.getAll('promptSets');
-    state.lorebooks = await db.getAll('lorebooks'); 
+    state.lorebooks = await db.getAll('lorebooks');
 
     // [新增] 強制同步預設角色邏輯
     try {
@@ -105,7 +142,7 @@ export async function loadStateFromDB() {
             const defaultCharIds = new Set(defaultCharacters.map(c => c.id));
 
             // 1. 刪除已不在 JSON 中的舊預設角色 (僅限 char_default_ 開頭的 ID)
-            const charsToDelete = state.characters.filter(c => 
+            const charsToDelete = state.characters.filter(c =>
                 c.id.startsWith('char_default_') && !defaultCharIds.has(c.id)
             );
 
@@ -118,7 +155,7 @@ export async function loadStateFromDB() {
             for (const char of defaultCharacters) {
                 // 檢查是否已存在，若存在則保留使用者的個別設定（如 loved, order），僅更新內容
                 const existingChar = state.characters.find(c => c.id === char.id);
-                
+
                 if (typeof char.firstMessage === 'string') {
                     char.firstMessage = [char.firstMessage];
                 }
@@ -193,7 +230,7 @@ export async function loadStateFromDB() {
         await db.put('promptSets', DEFAULT_PROMPT_SET);
         state.promptSets.push(DEFAULT_PROMPT_SET);
     }
-    
+
     // [修改] 為舊的世界書資料加上 enabled 屬性
     if (state.lorebooks.length === 0) {
         const defaultBookCopy = JSON.parse(JSON.stringify(DEFAULT_LOREBOOK));
@@ -216,7 +253,7 @@ export async function loadStateFromDB() {
             console.log("資料遷移完成: 世界書已更新為多重啟用模式。");
         }
     }
-    
+
     if (!state.activePromptSetId || !state.promptSets.find(ps => ps.id === state.activePromptSetId)) {
         state.activePromptSetId = state.promptSets[0]?.id || null;
     }
@@ -240,10 +277,12 @@ export async function loadChatDataForCharacter(charId) {
     const histories = await db.get('chatHistories', charId);
     const memories = await db.get('longTermMemories', charId);
     const metadatas = await db.get('chatMetadatas', charId);
+    const scenes = await db.get('sceneStates', charId);
 
     state.chatHistories[charId] = histories ? histories.data : {};
     state.longTermMemories[charId] = memories ? memories.data : {};
     state.chatMetadatas[charId] = metadatas ? metadatas.data : {};
+    state.sceneStates[charId] = scenes ? scenes.data : {};
 
     if (state.chatMetadatas[charId]) {
         let metaMigrationNeeded = false;
@@ -272,7 +311,8 @@ export function saveSettings() {
         activeCharacterId: state.activeCharacterId,
         activeChatId: state.activeChatId,
         apiPresets: state.apiPresets,
-        activePromptSetId: state.activePromptSetId, 
+        activePromptSetId: state.activePromptSetId,
+        sceneKeywordMap: state.sceneKeywordMap,
     };
     return db.put('keyValueStore', settingsData);
 }
@@ -309,6 +349,7 @@ export async function deleteAllChatDataForChar(charId) {
     await db.deleteItem('chatHistories', charId);
     await db.deleteItem('longTermMemories', charId);
     await db.deleteItem('chatMetadatas', charId);
+    await db.deleteItem('sceneStates', charId);
 }
 
 export function savePromptSet(promptSet) {
@@ -326,5 +367,10 @@ export function saveLorebook(lorebook) {
 
 export function deleteLorebook(lorebookId) {
     return db.deleteItem('lorebooks', lorebookId);
+}
+
+// 場景狀態相關儲存函式
+export function saveAllSceneStatesForChar(charId) {
+    return db.put('sceneStates', { id: charId, data: state.sceneStates[charId] });
 }
 

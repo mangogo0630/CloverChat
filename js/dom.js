@@ -195,7 +195,7 @@ export const lorebookEntryEditorTitle = document.getElementById('lorebook-entry-
 export const lorebookEntryList = document.getElementById('lorebook-entry-list');
 export const addLorebookEntryBtn = document.getElementById('add-lorebook-entry-btn');
 export const closeLorebookEntryEditorBtn = document.getElementById('close-lorebook-entry-editor-btn');
-export const exportSingleLorebookBtn = document.getElementById('export-single-lorebook-btn'); 
+export const exportSingleLorebookBtn = document.getElementById('export-single-lorebook-btn');
 
 // 單一條目新增/編輯 Modal
 export const lorebookEditorModal = document.getElementById('lorebook-editor-modal');
@@ -217,6 +217,43 @@ export const matchCharDescCheckbox = document.getElementById('match-char-desc');
 export const matchScenarioCheckbox = document.getElementById('match-scenario');
 export const matchCreatorNotesCheckbox = document.getElementById('match-creator-notes');
 export const matchPersonaDescCheckbox = document.getElementById('match-persona-desc');
+
+// 場景地圖 (Scene Map) - 聊天室層級
+export const viewSceneBtn = document.getElementById('view-scene-btn');
+export const sceneMapEditorModal = document.getElementById('scene-map-editor-modal');
+export const sceneTreeContainer = document.getElementById('scene-tree');
+export const addRootSceneNodeBtn = document.getElementById('add-root-scene-node-btn');
+export const undoSessionBtn = document.getElementById('undo-session-btn');
+export const resetSceneMapBtn = document.getElementById('reset-scene-map-btn');
+export const closeSceneMapEditorBtn = document.getElementById('close-scene-map-editor-btn');
+export const closeSceneMapEditorBtnMobile = document.getElementById('close-scene-map-editor-btn-mobile');
+export const aiSceneAnalysisBtn = document.getElementById('ai-scene-analysis-btn');
+export const exportSceneMapBtn = document.getElementById('export-scene-map-btn');
+export const importSceneMapBtn = document.getElementById('import-scene-map-btn');
+
+// 場景節點編輯器
+export const sceneNodeEditorModal = document.getElementById('scene-node-editor-modal');
+export const sceneNodeEditorTitle = document.getElementById('scene-node-editor-title');
+export const sceneNodeNameInput = document.getElementById('scene-node-name');
+export const sceneNodeTypeSelect = document.getElementById('scene-node-type');
+export const sceneNodeDescriptionInput = document.getElementById('scene-node-description');
+export const sceneNodeKeywordsInput = document.getElementById('scene-node-keywords');
+export const aiSuggestKeywordsBtn = document.getElementById('ai-suggest-keywords-btn');
+export const saveSceneNodeBtn = document.getElementById('save-scene-node-btn');
+export const cancelSceneNodeEditorBtn = document.getElementById('cancel-scene-node-editor-btn');
+export const deleteSceneNodeBtn = document.getElementById('delete-scene-node-btn');
+
+// 場景更新確認
+export const sceneUpdateConfirmModal = document.getElementById('scene-update-confirm-modal');
+export const sceneUpdatesList = document.getElementById('scene-updates-list');
+export const applySceneUpdatesBtn = document.getElementById('apply-scene-updates-btn');
+export const cancelSceneUpdatesBtn = document.getElementById('cancel-scene-updates-btn');
+
+// 場景關鍵字映射
+export const keywordMappingList = document.getElementById('keyword-mapping-list');
+export const addKeywordMappingBtn = document.getElementById('add-keyword-mapping-btn');
+export const resetKeywordMappingsBtn = document.getElementById('reset-keyword-mappings-btn');
+export const enableAiSceneAnalysisCheckbox = document.getElementById('enable-ai-scene-analysis');
 export const lorebookEntrySecondaryKeywordsInput = document.getElementById('lorebook-entry-secondary-keywords');
 
 
@@ -235,3 +272,10 @@ export const advancedImportContent = document.getElementById('advanced-import-co
 export const cancelAdvancedImportBtn = document.getElementById('cancel-advanced-import-btn');
 export const importJustCharBtn = document.getElementById('import-just-char-btn');
 export const importWithExtrasBtn = document.getElementById('import-with-extras-btn');
+
+// Prompt Viewer
+export const viewPromptOptionBtn = document.getElementById('view-prompt-option-btn');
+export const viewPromptModal = document.getElementById('view-prompt-modal');
+export const viewPromptTextarea = document.getElementById('view-prompt-textarea');
+export const copyPromptBtn = document.getElementById('copy-prompt-btn');
+export const closeViewPromptBtn = document.getElementById('close-view-prompt-btn');

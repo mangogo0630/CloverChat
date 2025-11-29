@@ -482,6 +482,7 @@ export function exportChatAsJsonl() {
             const activeUser = state.userPersonas.find(p => p.id === state.activeUserPersonaId) || state.userPersonas[0];
             const metadata = state.chatMetadatas[state.activeCharacterId]?.[state.activeChatId] || {};
             const memory = state.longTermMemories[state.activeCharacterId]?.[state.activeChatId] || '';
+            const sceneMap = state.sceneStates[state.activeCharacterId]?.[state.activeChatId] || null; // [新增] 場景地圖
             
             const now = new Date();
             const createDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}@${String(now.getHours()).padStart(2, '0')}h${String(now.getMinutes()).padStart(2, '0')}m${String(now.getSeconds()).padStart(2, '0')}s`;
@@ -492,7 +493,8 @@ export function exportChatAsJsonl() {
                 character_name: activeChar.name,
                 create_date: createDate,
                 chat_metadata: metadata,
-                long_term_memory: memory
+                long_term_memory: memory,
+                scene_map: sceneMap // [新增] 場景地圖資料
             };
             
             let content = JSON.stringify(metaObject) + '\n';

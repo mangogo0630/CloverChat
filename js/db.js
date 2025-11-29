@@ -2,7 +2,7 @@
 // 這個檔案封裝了所有與 IndexedDB 互動的底層邏輯。
 
 const DB_NAME = 'AiChatDB';
-const DB_VERSION = 4; // 版本號 +1 以觸發資料庫結構更新
+const DB_VERSION = 6; // 版本號 +1 以觸發資料庫結構更新 (場景地圖改為聊天室層級)
 let db;
 
 /**
@@ -40,6 +40,10 @@ export function openDB() {
             // 為世界書建立新的儲存區
             if (!db.objectStoreNames.contains('lorebooks')) {
                 db.createObjectStore('lorebooks', { keyPath: 'id' });
+            }
+            // 為場景狀態建立新的儲存區（與 chatHistories 相同結構）
+            if (!db.objectStoreNames.contains('sceneStates')) {
+                db.createObjectStore('sceneStates', { keyPath: 'id' });
             }
         };
 

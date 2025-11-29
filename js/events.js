@@ -5,6 +5,7 @@ import * as DOM from './dom.js';
 import * as Handlers from './handlers.js';
 import * as UI from './ui.js';
 import * as Utils from './utils.js';
+import * as SceneMapManager from './sceneMapManager.js';
 import { state, tempState, saveSettings, loadChatDataForCharacter } from './state.js';
 
 /**
@@ -36,8 +37,8 @@ export function setupEventListeners() {
 
     // 角色與聊天室列表
     safeAddEventListener(DOM.backToCharsBtn, 'click', async () => {
-        UI.switchPanelToCharacterView(); 
-        state.activeChatId = null; 
+        UI.switchPanelToCharacterView();
+        state.activeChatId = null;
         await saveSettings();
     });
     safeAddEventListener(DOM.addChatBtn, 'click', Handlers.handleAddNewChat);
@@ -51,7 +52,7 @@ export function setupEventListeners() {
             Handlers.openCharacterEditor(state.activeCharacterId)
         });
     }
-    
+
     safeAddEventListener(DOM.deleteActiveCharacterBtn, 'click', Handlers.handleDeleteActiveCharacter);
     safeAddEventListener(DOM.headerLoveChatBtn, 'click', () => Handlers.handleToggleCharacterLove(state.activeCharacterId));
 
@@ -87,7 +88,7 @@ export function setupEventListeners() {
         // [NEW] 隱藏側邊欄聊天室項目的下拉選單
         document.querySelectorAll('.session-dropdown-menu').forEach(menu => {
             if (!menu.classList.contains('hidden') && !menu.parentElement.contains(e.target)) {
-                 menu.classList.add('hidden');
+                menu.classList.add('hidden');
             }
         });
     });
@@ -100,14 +101,14 @@ export function setupEventListeners() {
     safeAddEventListener(DOM.saveMemoryEditorBtn, 'click', Handlers.handleSaveMemory);
     safeAddEventListener(DOM.toggleMemoryPreviewBtn, 'click', Handlers.handleToggleMemoryPreview); // NEW
     safeAddEventListener(DOM.cancelMemoryEditorBtn, 'click', () => UI.toggleModal('memory-editor-modal', false));
-    
+
     safeAddEventListener(DOM.addCharacterBtn, 'click', () => {
         if (DOM.leftPanel.classList.contains('mobile-visible')) {
-           DOM.leftPanel.classList.remove('mobile-visible');
-           DOM.mobileOverlay.classList.add('hidden');
-       }
-       Handlers.openCharacterEditor()
-   });
+            DOM.leftPanel.classList.remove('mobile-visible');
+            DOM.mobileOverlay.classList.add('hidden');
+        }
+        Handlers.openCharacterEditor()
+    });
 
     safeAddEventListener(DOM.saveCharBtn, 'click', Handlers.handleSaveCharacter);
     safeAddEventListener(DOM.cancelCharEditorBtn, 'click', () => UI.toggleModal('character-editor-modal', false));
@@ -172,7 +173,7 @@ export function setupEventListeners() {
         if (advancedHeader) {
             advancedHeader.parentElement.classList.toggle('expanded');
         }
-    
+
         const aboutHeader = e.target.closest('.about-section-header');
         if (aboutHeader) {
             aboutHeader.parentElement.classList.toggle('expanded');
@@ -182,11 +183,11 @@ export function setupEventListeners() {
     safeAddEventListener(DOM.testApiBtn, 'click', Handlers.handleTestApiConnection);
     safeAddEventListener(DOM.saveGlobalSettingsBtn, 'click', Handlers.handleSaveGlobalSettings);
     safeAddEventListener(DOM.cancelGlobalSettingsBtn, 'click', () => UI.toggleModal('global-settings-modal', false));
-    
+
     if (DOM.temperatureSlider) Utils.setupSliderSync(DOM.temperatureSlider, DOM.temperatureValue);
     if (DOM.topPSlider) Utils.setupSliderSync(DOM.topPSlider, DOM.topPValue);
     if (DOM.repetitionPenaltySlider) Utils.setupSliderSync(DOM.repetitionPenaltySlider, DOM.repetitionPenaltyValue);
-    
+
     safeAddEventListener(DOM.apiProviderSelect, 'change', UI.updateModelDropdown);
 
     // API 設定檔
@@ -206,7 +207,7 @@ export function setupEventListeners() {
         });
     });
     safeAddEventListener(DOM.themeSelect, 'change', (e) => Utils.applyTheme(e.target.value));
-    
+
     // 提示词库
     safeAddEventListener(DOM.importPromptSetBtn, 'click', Handlers.handleImportPromptSet);
     safeAddEventListener(DOM.exportPromptSetBtn, 'click', Handlers.handleExportPromptSet);
@@ -231,6 +232,68 @@ export function setupEventListeners() {
     safeAddEventListener(DOM.deletePromptEditorBtn, 'click', Handlers.handleDeletePromptItem);
     safeAddEventListener(DOM.promptEditorPositionSelect, 'change', Handlers.handlePromptPositionChange);
 
+    // 場景地圖 (Scene Map) - 聊天室層級
+    safeAddEventListener(DOM.viewSceneBtn, 'click', Handlers.openSceneMapEditor);
+    safeAddEventListener(DOM.undoSessionBtn, 'click', Handlers.handleUndoSession);
+    safeAddEventListener(DOM.resetSceneMapBtn, 'click', Handlers.handleResetSceneMap);
+    safeAddEventListener(DOM.closeSceneMapEditorBtn, 'click', () => UI.toggleModal('scene-map-editor-modal', false));
+    safeAddEventListener(DOM.closeSceneMapEditorBtnMobile, 'click', () => UI.toggleModal('scene-map-editor-modal', false));
+    safeAddEventListener(DOM.addRootSceneNodeBtn, 'click', () => Handlers.openSceneNodeEditor(null, null));
+
+    safeAddEventListener(DOM.sceneTreeContainer, 'click', (e) => {
+        const editBtn = e.target.closest('.edit-node-btn');
+        const addChildBtn = e.target.closest('.add-child-node-btn');
+        const toggleBtn = e.target.closest('.toggle-node-btn');
+
+        if (editBtn) {
+            const nodeId = editBtn.dataset.nodeId;
+            Handlers.openSceneNodeEditor(nodeId, null);
+        } else if (addChildBtn) {
+            const parentId = addChildBtn.dataset.nodeId;
+            Handlers.openSceneNodeEditor(null, parentId);
+        } else if (toggleBtn) {
+            const nodeId = toggleBtn.dataset.nodeId;
+            if (tempState.collapsedSceneNodes.has(nodeId)) {
+                tempState.collapsedSceneNodes.delete(nodeId);
+            } else {
+                tempState.collapsedSceneNodes.add(nodeId);
+            }
+            UI.renderSceneTree();
+        }
+    });
+
+    safeAddEventListener(DOM.saveSceneNodeBtn, 'click', Handlers.handleSaveSceneNode);
+    safeAddEventListener(DOM.cancelSceneNodeEditorBtn, 'click', () => UI.toggleModal('scene-node-editor-modal', false));
+    safeAddEventListener(DOM.deleteSceneNodeBtn, 'click', Handlers.handleDeleteSceneNode);
+    safeAddEventListener(DOM.aiSuggestKeywordsBtn, 'click', Handlers.handleAiSuggestKeywords); // AI 建議關鍵字
+
+    // AI 輔助場景分析
+    safeAddEventListener(DOM.aiSceneAnalysisBtn, 'click', Handlers.handleAiSceneAnalysis);
+    safeAddEventListener(DOM.applySceneUpdatesBtn, 'click', Handlers.applySelectedSceneUpdates);
+    safeAddEventListener(DOM.applySceneUpdatesBtn, 'click', Handlers.applySelectedSceneUpdates);
+    safeAddEventListener(DOM.cancelSceneUpdatesBtn, 'click', Handlers.cancelSceneUpdates);
+    // [NEW] 場景地圖匯入/匯出
+    if (DOM.exportSceneMapBtn) {
+        console.log('Binding exportSceneMapBtn');
+        safeAddEventListener(DOM.exportSceneMapBtn, 'click', Handlers.handleExportSceneBtnClick);
+    } else {
+        console.error('exportSceneMapBtn not found in DOM');
+    }
+
+    if (DOM.importSceneMapBtn) {
+        console.log('Binding importSceneMapBtn');
+        safeAddEventListener(DOM.importSceneMapBtn, 'click', Handlers.handleImportSceneBtnClick);
+    } else {
+        console.error('importSceneMapBtn not found in DOM');
+    }
+
+
+    // 場景節點拖放
+    setupSceneNodeDragAndDrop();
+
+    // [NEW] 場景地圖拖曳捲動 (Panning)
+    setupSceneMapPanning();
+
     // 世界書 (Lorebook)
     safeAddEventListener(DOM.addLorebookBtn, 'click', Handlers.handleAddNewLorebook);
     safeAddEventListener(DOM.importLorebookBtn, 'click', Handlers.handleImportLorebook);
@@ -246,7 +309,7 @@ export function setupEventListeners() {
             Handlers.handleDeleteLorebook(bookId);
         }
     });
-    
+
     // 條目編輯器 Modal
     safeAddEventListener(DOM.closeLorebookEntryEditorBtn, 'click', () => UI.toggleModal('lorebook-entry-editor-modal', false));
     safeAddEventListener(DOM.addLorebookEntryBtn, 'click', () => Handlers.openLorebookEditor());
@@ -260,10 +323,10 @@ export function setupEventListeners() {
         } else if (e.target.closest('.edit-lorebook-entry-btn')) {
             Handlers.openLorebookEditor(entryId);
         } else if (e.target.closest('.lorebook-status-indicator')) {
-             Handlers.handleToggleLorebookEntryConstant(entryId);
+            Handlers.handleToggleLorebookEntryConstant(entryId);
         }
     });
-    
+
     // 單一條目編輯 Modal
     safeAddEventListener(DOM.saveLorebookEntryBtn, 'click', Handlers.handleSaveLorebookEntry);
     safeAddEventListener(DOM.cancelLorebookEditorBtn, 'click', () => {
@@ -315,7 +378,7 @@ export function setupEventListeners() {
         UI.toggleModal('import-options-modal', false);
         Handlers.handleGlobalImport('overwrite');
     });
-    
+
     // 進階匯入 Modal
     safeAddEventListener(DOM.cancelAdvancedImportBtn, 'click', () => {
         UI.toggleModal('advanced-import-modal', false);
@@ -326,6 +389,11 @@ export function setupEventListeners() {
     });
     safeAddEventListener(DOM.importJustCharBtn, 'click', () => Handlers.handleAdvancedImport(false));
     safeAddEventListener(DOM.importWithExtrasBtn, 'click', () => Handlers.handleAdvancedImport(true));
+
+    // Prompt Viewer
+    safeAddEventListener(DOM.viewPromptOptionBtn, 'click', Handlers.handleViewPrompt);
+    safeAddEventListener(DOM.copyPromptBtn, 'click', Handlers.handleCopyPrompt);
+    safeAddEventListener(DOM.closeViewPromptBtn, 'click', () => UI.toggleModal('view-prompt-modal', false));
 
     // 登入 Modal
     safeAddEventListener(DOM.googleLoginBtn, 'click', Handlers.handleGoogleLogin);
@@ -347,7 +415,7 @@ export function setupEventListeners() {
     safeAddEventListener(DOM.deleteSingleVersionBtn, 'click', Handlers.handleDeleteSingleVersion);
     safeAddEventListener(DOM.deleteAllVersionsBtn, 'click', Handlers.handleDeleteAllVersions);
     safeAddEventListener(DOM.cancelDeleteOptionsBtn, 'click', () => UI.toggleModal('delete-options-modal', false));
-    
+
     window.addEventListener('resize', Utils.setAppHeight);
 
     // ================== 事件委派 (處理動態產生的元素) ==================
@@ -359,7 +427,7 @@ export function setupEventListeners() {
         await loadChatDataForCharacter(charId);
         UI.showChatSessionListView(charId);
         state.activeCharacterId = charId;
-        state.activeChatId = null; 
+        state.activeChatId = null;
         await saveSettings();
     });
 
@@ -367,7 +435,7 @@ export function setupEventListeners() {
         const sessionItem = e.target.closest('.chat-session-item');
         if (!sessionItem) return;
         const chatId = sessionItem.dataset.id;
-        
+
         if (e.target.closest('.session-item-content')) {
             await Handlers.switchChat(chatId);
             DOM.leftPanel.classList.remove('mobile-visible');
@@ -410,7 +478,7 @@ export function setupEventListeners() {
             }
             return;
         }
-        
+
         const messageIndex = parseInt(messageRow.dataset.index, 10);
         if (tempState.isScreenshotMode) {
             Handlers.handleSelectMessage(messageIndex);
@@ -420,7 +488,7 @@ export function setupEventListeners() {
         // Clicked on a chat bubble
         if (e.target.closest('.chat-bubble')) {
             const currentEditBtn = messageRow.querySelector('.edit-msg-btn');
-            
+
             // Hide all other edit buttons
             document.querySelectorAll('.edit-msg-btn').forEach(otherBtn => {
                 if (otherBtn !== currentEditBtn) {
@@ -454,7 +522,7 @@ export function setupEventListeners() {
     let draggedId = null;
     let draggedElement = null;
     let isDragging = false;
-    
+
     function getDragAfterElement(container, y) {
         const draggableElements = [...container.querySelectorAll('[data-id]:not(.dragging)')];
         return draggableElements.reduce((closest, child) => {
@@ -480,7 +548,7 @@ export function setupEventListeners() {
             if (!targetItem || (e.pointerType === 'mouse' && e.button !== 0)) return;
 
             e.preventDefault(); // 防止文字選取等預設行為
-            
+
             draggedElement = targetItem;
             isDragging = true;
             draggedId = targetItem.dataset.id;
@@ -529,7 +597,7 @@ export function setupEventListeners() {
             draggedId = null;
             isDragging = false;
         };
-        
+
         container.addEventListener('pointerdown', onPointerDown);
         container.addEventListener('dragstart', (e) => { if (isDragging) e.preventDefault(); });
         container.addEventListener('dragend', () => cleanup());
@@ -541,5 +609,673 @@ export function setupEventListeners() {
     setupDragSort(DOM.characterList, Handlers.handleCharacterDropSort);
     setupDragSort(DOM.chatSessionList, Handlers.handleChatSessionDropSort);
     setupDragSort(DOM.promptList, Handlers.handlePromptDropSort);
+
+    // 場景關鍵字映射管理
+    safeAddEventListener(DOM.addKeywordMappingBtn, 'click', Handlers.handleAddKeywordMapping);
+    safeAddEventListener(DOM.resetKeywordMappingsBtn, 'click', Handlers.handleResetKeywordMappings);
+    safeAddEventListener(DOM.enableAiSceneAnalysisCheckbox, 'change', (e) => {
+        state.globalSettings.enableAiSceneAnalysis = e.target.checked;
+        saveSettings();
+    });
+
+    // 關鍵字映射列表的刪除按鈕事件委派
+    safeAddEventListener(DOM.keywordMappingList, 'click', (e) => {
+        const deleteBtn = e.target.closest('.icon-btn-sm.danger');
+        if (deleteBtn) {
+            const keyword = deleteBtn.dataset.keyword;
+            Handlers.handleDeleteKeywordMapping(keyword);
+        }
+    });
+}
+
+/**
+ * 設置場景節點的拖放功能
+ */
+let draggedNodeId = null;
+let isDragDropSetup = false;
+
+function setupSceneNodeDragAndDrop() {
+    // 防止重複綁定
+    if (isDragDropSetup) return;
+    isDragDropSetup = true;
+
+    // Helper function to determine if cursor is in the left half of an element
+    const isCursorInLeftHalf = (element, clientX) => {
+        const rect = element.getBoundingClientRect();
+        return (clientX - rect.left) < (rect.width / 2);
+    };
+
+    // Helper function to determine if cursor is in the top half of an element
+    const isCursorInTopHalf = (element, clientY) => {
+        const rect = element.getBoundingClientRect();
+        return (clientY - rect.top) < (rect.height / 2);
+    };
+
+    // ========================================
+    // 手機觸控支援
+    // ========================================
+
+    let touchDraggedElement = null;
+    let touchClone = null;
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let isDraggingTouch = false;
+
+    // 觸控開始
+    DOM.sceneTreeContainer.addEventListener('touchstart', (e) => {
+        const nodeContent = e.target.closest('.scene-node-content');
+        if (!nodeContent) return;
+
+        touchDraggedElement = nodeContent;
+        draggedNodeId = nodeContent.dataset.nodeId;
+
+        const touch = e.touches[0];
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+
+        // 短暫延遲以區分點擊和拖曳
+        setTimeout(() => {
+            if (touchDraggedElement) {
+                isDraggingTouch = true;
+
+                // 創建拖曳中的視覺克隆
+                touchClone = touchDraggedElement.cloneNode(true);
+                touchClone.style.position = 'fixed';
+                touchClone.style.opacity = '0.7';
+                touchClone.style.pointerEvents = 'none';
+                touchClone.style.zIndex = '10000';
+                touchClone.style.width = touchDraggedElement.offsetWidth + 'px';
+                document.body.appendChild(touchClone);
+
+                // 原始元素半透明
+                touchDraggedElement.style.opacity = '0.3';
+                DOM.sceneTreeContainer.classList.add('is-dragging');
+            }
+        }, 100);
+    });
+
+    // 觸控移動
+    DOM.sceneTreeContainer.addEventListener('touchmove', (e) => {
+        if (!isDraggingTouch || !touchClone) return;
+
+        e.preventDefault(); // 防止頁面滾動
+
+        const touch = e.touches[0];
+        touchClone.style.left = (touch.clientX - touchStartX + touchDraggedElement.getBoundingClientRect().left) + 'px';
+        touchClone.style.top = (touch.clientY - touchStartY + touchDraggedElement.getBoundingClientRect().top) + 'px';
+
+        // 檢測放置目標
+        const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+        const targetNode = elementBelow?.closest('.scene-node-content');
+        const targetHeader = elementBelow?.closest('.tree-root-header, .scene-column-header');
+
+        // 移除所有高亮
+        document.querySelectorAll('.drag-over, .drag-over-top, .drag-over-bottom, .drag-over-left, .drag-over-right').forEach(el => {
+            el.classList.remove('drag-over', 'drag-over-top', 'drag-over-bottom', 'drag-over-left', 'drag-over-right');
+        });
+
+        // 添加高亮到目標
+        if (targetNode && targetNode !== touchDraggedElement) {
+            targetNode.closest('.scene-node').classList.add('drag-over');
+        } else if (targetHeader) {
+            targetHeader.classList.add('drag-over-bottom');
+        }
+    });
+
+    // 觸控結束
+    DOM.sceneTreeContainer.addEventListener('touchend', async (e) => {
+        if (!isDraggingTouch) {
+            touchDraggedElement = null;
+            draggedNodeId = null;
+            return;
+        }
+
+        e.preventDefault();
+
+        const touch = e.changedTouches[0];
+        const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+
+        // 清理視覺效果
+        if (touchClone) {
+            touchClone.remove();
+            touchClone = null;
+        }
+        if (touchDraggedElement) {
+            touchDraggedElement.style.opacity = '';
+        }
+        DOM.sceneTreeContainer.classList.remove('is-dragging');
+        document.querySelectorAll('.drag-over, .drag-over-top, .drag-over-bottom').forEach(el => {
+            el.classList.remove('drag-over', 'drag-over-top', 'drag-over-bottom');
+        });
+
+        // 處理放置
+        if (elementBelow && draggedNodeId) {
+            const targetNode = elementBelow.closest('.scene-node');
+            const targetHeader = elementBelow.closest('.tree-root-header, .scene-column-header');
+            const fixedZone = elementBelow.closest('.fixed-root-drop-zone');
+
+            let targetNodeId = null;
+            let newIndex = null;
+
+            if (targetNode) {
+                targetNodeId = targetNode.dataset.nodeId;
+            } else if (targetHeader) {
+                const rootNodeElement = targetHeader.querySelector('.scene-node');
+                if (rootNodeElement) {
+                    const targetRootId = rootNodeElement.dataset.nodeId;
+                    const sceneMap = SceneMapManager.getActiveSceneMap();
+                    if (sceneMap && sceneMap.rootNodes.includes(targetRootId)) {
+                        targetNodeId = null;
+                        const targetIndex = sceneMap.rootNodes.indexOf(targetRootId);
+                        newIndex = targetIndex + 1; // 放在目標後面
+                    }
+                }
+            } else if (fixedZone) {
+                targetNodeId = null;
+            }
+
+            // 執行移動
+            if (targetNodeId !== draggedNodeId) {
+                const success = SceneMapManager.moveItem(draggedNodeId, targetNodeId, newIndex);
+                if (success) {
+                    const sceneMap = SceneMapManager.getActiveSceneMap();
+                    await saveAllSceneStatesForChar(state.activeCharacterId);
+                    UI.renderSceneTree();
+                }
+            }
+        }
+
+        // 重置狀態
+        isDraggingTouch = false;
+        touchDraggedElement = null;
+        draggedNodeId = null;
+    });
+
+    // 觸控取消（例如來電）
+    DOM.sceneTreeContainer.addEventListener('touchcancel', () => {
+        if (touchClone) {
+            touchClone.remove();
+            touchClone = null;
+        }
+        if (touchDraggedElement) {
+            touchDraggedElement.style.opacity = '';
+        }
+        DOM.sceneTreeContainer.classList.remove('is-dragging');
+        isDraggingTouch = false;
+        touchDraggedElement = null;
+        draggedNodeId = null;
+    });
+
+    // ========================================
+    // 桌面版拖放（保留原有邏輯）
+    // ========================================
+
+    // 拖曳開始
+    DOM.sceneTreeContainer.addEventListener('dragstart', (e) => {
+        const nodeElement = e.target.closest('.scene-node');
+        if (!nodeElement) return;
+
+        draggedNodeId = nodeElement.dataset.nodeId;
+        e.dataTransfer.setData('text/plain', draggedNodeId);
+        e.dataTransfer.effectAllowed = 'move';
+
+        // [NEW] 標記容器正在拖曳中，顯示固定放置區
+        DOM.sceneTreeContainer.classList.add('is-dragging');
+
+        // 延遲添加 dragging class，避免拖曳影像也變透明
+        setTimeout(() => {
+            nodeElement.classList.add('dragging');
+        }, 0);
+    });
+
+    DOM.sceneTreeContainer.addEventListener('dragend', (e) => {
+        const nodeElement = e.target.closest('.scene-node');
+        if (nodeElement) {
+            nodeElement.classList.remove('dragging');
+        }
+        draggedNodeId = null;
+
+        // [NEW] 移除容器拖曳狀態
+        DOM.sceneTreeContainer.classList.remove('is-dragging');
+
+        // 清除所有 drag-over 樣式
+        document.querySelectorAll('.drag-over, .drag-over-left, .drag-over-right').forEach(el => {
+            el.classList.remove('drag-over');
+            el.classList.remove('drag-over-left');
+            el.classList.remove('drag-over-right');
+        });
+    });
+
+    DOM.sceneTreeContainer.addEventListener('dragover', (e) => {
+        e.preventDefault(); // 允許放置
+
+        // [MODIFIED] 支援 .scene-column-body, .scene-map-columns-container, .scene-column-add-zone, .fixed-root-drop-zone, 和 .scene-column-header 作為放置目標
+        const nodeElement = e.target.closest('.scene-node');
+        const columnBody = e.target.closest('.scene-column-body');
+        const columnHeader = e.target.closest('.scene-column-header'); // [NEW]
+        const columnsContainer = e.target.closest('.scene-map-columns-container');
+        const addZone = e.target.closest('.scene-column-add-zone');
+        const fixedZone = e.target.closest('.fixed-root-drop-zone');
+
+        if (!nodeElement && !columnBody && !columnHeader && !columnsContainer && !addZone && !fixedZone) return;
+        if (!draggedNodeId) return;
+
+        // 如果是 Body，目標是該欄位的根節點
+        let targetNodeId = null; // null 表示目標是根層級 (container)
+        let highlightElement;
+
+        if (columnHeader) {
+            // [NEW] 如果是 Header，目標是排序，所以 targetNodeId 為 null (根層級)
+            // 但我們需要高亮 Header
+            highlightElement = columnHeader;
+        } else if (nodeElement) {
+            targetNodeId = nodeElement.dataset.nodeId;
+            highlightElement = nodeElement;
+        } else if (columnBody) {
+            // 找到該欄位的根節點 ID
+            const column = columnBody.closest('.scene-column');
+            const rootNodeElement = column.querySelector('.scene-column-header .scene-node');
+            if (rootNodeElement) {
+                targetNodeId = rootNodeElement.dataset.nodeId;
+                highlightElement = columnBody; // 高亮 Body
+            } else {
+                return;
+            }
+        } else if (addZone) {
+            // 目標是新增欄位區 (創建新根節點)
+            targetNodeId = null;
+            highlightElement = addZone;
+        } else if (fixedZone) {
+            // 目標是固定放置區 (創建新根節點)
+            targetNodeId = null;
+            highlightElement = fixedZone;
+        } else if (columnsContainer) {
+            // 目標是容器本身 (創建新根節點)
+            targetNodeId = null;
+            highlightElement = columnsContainer;
+        }
+
+        // 不能拖到自己身上
+        if (targetNodeId === draggedNodeId) {
+            e.dataTransfer.dropEffect = 'none';
+            if (highlightElement) highlightElement.classList.remove('drag-over');
+            return;
+        }
+
+        // 檢查目標節點
+        const sceneMap = SceneMapManager.getActiveSceneMap();
+        let targetNode = null;
+        if (targetNodeId) {
+            targetNode = sceneMap.nodes[targetNodeId];
+        }
+        const draggedNode = sceneMap.nodes[draggedNodeId];
+
+        // 限制 1（優先）：防止循環引用 - 不能拖到自己的子孫節點下
+        // 如果 targetNodeId 為 null (root)，則不需要檢查 descendant，因為 root 不會是任何人的 descendant
+        if (targetNodeId && SceneMapManager.isDescendant(draggedNodeId, targetNodeId)) {
+            e.dataTransfer.dropEffect = 'none';
+            if (highlightElement) highlightElement.classList.remove('drag-over');
+            return;
+        }
+
+        // 限制 2：Item 類型不能接收子節點
+        if (targetNodeId && targetNode.type === 'item') {
+            e.dataTransfer.dropEffect = 'none';
+            if (highlightElement) highlightElement.classList.remove('drag-over');
+            return;
+        }
+
+        // 移除其他節點的高亮
+        document.querySelectorAll('.scene-node.drag-over, .scene-column-body.drag-over, .scene-column-header.drag-over, .scene-column-header.drag-over-left, .scene-column-header.drag-over-right, .scene-map-columns-container.drag-over, .scene-column-add-zone.drag-over, .fixed-root-drop-zone.drag-over').forEach(el => {
+            if (el !== highlightElement) {
+                el.classList.remove('drag-over');
+                el.classList.remove('drag-over-left');
+                el.classList.remove('drag-over-right');
+            }
+        });
+
+        // 高亮當前目標
+        if (highlightElement) {
+            if (highlightElement.classList.contains('scene-column-header')) {
+                // [NEW] 根據滑鼠位置決定是左還是右
+                const isLeftHalf = isCursorInLeftHalf(highlightElement, e.clientX);
+
+                if (isLeftHalf) {
+                    highlightElement.classList.add('drag-over-left');
+                    highlightElement.classList.remove('drag-over-right');
+                } else {
+                    highlightElement.classList.add('drag-over-right');
+                    highlightElement.classList.remove('drag-over-left');
+                }
+                // Header 本身不加 drag-over，避免樣式衝突
+                highlightElement.classList.remove('drag-over');
+            } else {
+                highlightElement.classList.add('drag-over');
+            }
+        }
+
+        e.dataTransfer.dropEffect = 'move';
+    });
+
+    DOM.sceneTreeContainer.addEventListener('dragenter', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const nodeElement = e.target.closest('.scene-node');
+        const columnBody = e.target.closest('.scene-column-body');
+        const columnHeader = e.target.closest('.scene-column-header');
+        const treeRootHeader = e.target.closest('.tree-root-header'); // [NEW]
+        const columnsContainer = e.target.closest('.scene-map-columns-container');
+        const addZone = e.target.closest('.scene-column-add-zone');
+        const fixedZone = e.target.closest('.fixed-root-drop-zone');
+
+        if (!nodeElement && !columnBody && !columnHeader && !treeRootHeader && !columnsContainer && !addZone && !fixedZone) return;
+        if (!draggedNodeId) return;
+
+        let targetNodeId;
+        let highlightElement;
+
+        if (columnHeader) {
+            highlightElement = columnHeader;
+        } else if (treeRootHeader) {
+            highlightElement = treeRootHeader;
+        } else if (nodeElement) {
+            targetNodeId = nodeElement.dataset.nodeId;
+            highlightElement = nodeElement;
+        } else if (columnBody) {
+            const column = columnBody.closest('.scene-column');
+            const rootNodeElement = column.querySelector('.scene-column-header .scene-node');
+            if (rootNodeElement) {
+                targetNodeId = rootNodeElement.dataset.nodeId;
+                highlightElement = columnBody;
+            } else {
+                return;
+            }
+        } else if (addZone) {
+            targetNodeId = null;
+            highlightElement = addZone;
+        } else if (fixedZone) {
+            targetNodeId = null;
+            highlightElement = fixedZone;
+        } else if (columnsContainer) {
+            targetNodeId = null;
+            highlightElement = columnsContainer;
+        }
+
+        if (targetNodeId === draggedNodeId) return;
+
+        const sceneMap = SceneMapManager.getActiveSceneMap();
+        let targetNode = null;
+        if (targetNodeId) {
+            targetNode = sceneMap.nodes[targetNodeId];
+        }
+
+        // 檢查是否為有效的放置目標
+        const isNotDescendant = !SceneMapManager.isDescendant(draggedNodeId, targetNodeId);
+        const isNotItem = !targetNode || targetNode.type !== 'item'; // 如果是 root (null)，則不是 item
+
+        const isValidTarget = isNotDescendant && isNotItem;
+
+        if (isValidTarget) {
+            // 移除其他節點的高亮
+            document.querySelectorAll('.scene-node.drag-over, .scene-column-body.drag-over, .scene-column-header.drag-over, .scene-column-header.drag-over-left, .scene-column-header.drag-over-right, .tree-root-header.drag-over, .tree-root-header.drag-over-top, .tree-root-header.drag-over-bottom, .scene-map-columns-container.drag-over, .scene-column-add-zone.drag-over, .fixed-root-drop-zone.drag-over').forEach(el => {
+                if (el !== highlightElement) {
+                    el.classList.remove('drag-over');
+                    el.classList.remove('drag-over-left');
+                    el.classList.remove('drag-over-right');
+                    el.classList.remove('drag-over-top');
+                    el.classList.remove('drag-over-bottom');
+                }
+            });
+
+            if (highlightElement.classList.contains('scene-column-header')) {
+                // [NEW] 根據滑鼠位置決定是左還是右
+                const isLeftHalf = isCursorInLeftHalf(highlightElement, e.clientX);
+
+                if (isLeftHalf) {
+                    highlightElement.classList.add('drag-over-left');
+                    highlightElement.classList.remove('drag-over-right');
+                } else {
+                    highlightElement.classList.add('drag-over-right');
+                    highlightElement.classList.remove('drag-over-left');
+                }
+                highlightElement.classList.remove('drag-over');
+            } else if (highlightElement.classList.contains('tree-root-header')) {
+                // [NEW] Tree view: 根據滑鼠位置決定是上還是下
+                const isTopHalf = isCursorInTopHalf(highlightElement, e.clientY);
+
+                if (isTopHalf) {
+                    highlightElement.classList.add('drag-over-top');
+                    highlightElement.classList.remove('drag-over-bottom');
+                } else {
+                    highlightElement.classList.add('drag-over-bottom');
+                    highlightElement.classList.remove('drag-over-top');
+                }
+                highlightElement.classList.remove('drag-over');
+            } else {
+                highlightElement.classList.add('drag-over');
+            }
+        } else {
+            highlightElement.classList.remove('drag-over');
+            highlightElement.classList.remove('drag-over-left');
+            highlightElement.classList.remove('drag-over-right');
+        }
+    });
+
+    DOM.sceneTreeContainer.addEventListener('dragleave', (e) => {
+        const nodeElement = e.target.closest('.scene-node');
+        const columnBody = e.target.closest('.scene-column-body');
+        const columnHeader = e.target.closest('.scene-column-header');
+        const treeRootHeader = e.target.closest('.tree-root-header'); // [NEW]
+        const columnsContainer = e.target.closest('.scene-map-columns-container');
+        const addZone = e.target.closest('.scene-column-add-zone');
+        const fixedZone = e.target.closest('.fixed-root-drop-zone');
+
+        if (nodeElement) {
+            if (!nodeElement.contains(e.relatedTarget)) {
+                nodeElement.classList.remove('drag-over');
+            }
+        } else if (columnHeader) {
+            if (!columnHeader.contains(e.relatedTarget)) {
+                columnHeader.classList.remove('drag-over');
+                columnHeader.classList.remove('drag-over-left');
+                columnHeader.classList.remove('drag-over-right');
+            }
+        } else if (treeRootHeader) {
+            // [NEW] Tree view root header cleanup
+            if (!treeRootHeader.contains(e.relatedTarget)) {
+                treeRootHeader.classList.remove('drag-over');
+                treeRootHeader.classList.remove('drag-over-top');
+                treeRootHeader.classList.remove('drag-over-bottom');
+            }
+        } else if (columnBody) {
+            if (!columnBody.contains(e.relatedTarget)) {
+                columnBody.classList.remove('drag-over');
+            }
+        } else if (addZone) {
+            if (!addZone.contains(e.relatedTarget)) {
+                addZone.classList.remove('drag-over');
+            }
+        } else if (fixedZone) {
+            if (!fixedZone.contains(e.relatedTarget)) {
+                fixedZone.classList.remove('drag-over');
+            }
+        } else if (columnsContainer) {
+            if (!columnsContainer.contains(e.relatedTarget)) {
+                columnsContainer.classList.remove('drag-over');
+            }
+        }
+    });
+
+    DOM.sceneTreeContainer.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const nodeElement = e.target.closest('.scene-node');
+        const columnBody = e.target.closest('.scene-column-body');
+        const columnHeader = e.target.closest('.scene-column-header');
+        const treeRootHeader = e.target.closest('.tree-root-header'); // [NEW]
+        const columnsContainer = e.target.closest('.scene-map-columns-container');
+        const addZone = e.target.closest('.scene-column-add-zone');
+        const fixedZone = e.target.closest('.fixed-root-drop-zone');
+
+        if (!nodeElement && !columnBody && !columnHeader && !treeRootHeader && !columnsContainer && !addZone && !fixedZone) return;
+        if (!draggedNodeId) return;
+
+        let targetNodeId = null;
+        let highlightElement;
+
+        // [NEW] 檢查是否拖曳到 Column Header 進行排序
+        let newIndex = null;
+
+        if (columnHeader) {
+            const column = columnHeader.closest('.scene-column');
+            const rootNodeElement = column.querySelector('.scene-column-header .scene-node');
+            if (rootNodeElement) {
+                const targetRootId = rootNodeElement.dataset.nodeId;
+
+                // 只有當目標是根節點時才允許排序
+                const sceneMap = SceneMapManager.getActiveSceneMap();
+                if (sceneMap && sceneMap.rootNodes.includes(targetRootId)) {
+                    targetNodeId = null; // 移動到根層級
+                    highlightElement = columnHeader; // 高亮 Header
+
+                    const rootNodes = sceneMap.rootNodes;
+                    const targetIndex = rootNodes.indexOf(targetRootId);
+
+                    const isLeftHalf = isCursorInLeftHalf(column, e.clientX);
+
+                    newIndex = isLeftHalf ? targetIndex : targetIndex + 1;
+                }
+            }
+        } else if (treeRootHeader) {
+            // [NEW] Handle tree view root header sorting
+            const rootNodeElement = treeRootHeader.querySelector('.scene-node');
+            if (rootNodeElement) {
+                const targetRootId = rootNodeElement.dataset.nodeId;
+
+                const sceneMap = SceneMapManager.getActiveSceneMap();
+                if (sceneMap && sceneMap.rootNodes.includes(targetRootId)) {
+                    targetNodeId = null; // 移動到根層級
+                    highlightElement = treeRootHeader;
+
+                    const rootNodes = sceneMap.rootNodes;
+                    const targetIndex = rootNodes.indexOf(targetRootId);
+
+                    const isTopHalf = isCursorInTopHalf(treeRootHeader, e.clientY);
+
+                    newIndex = isTopHalf ? targetIndex : targetIndex + 1;
+                }
+            }
+        } else if (nodeElement) {
+            targetNodeId = nodeElement.dataset.nodeId;
+            highlightElement = nodeElement;
+        } else if (columnBody) {
+            const column = columnBody.closest('.scene-column');
+            const rootNodeElement = column.querySelector('.scene-column-header .scene-node');
+            if (rootNodeElement) {
+                targetNodeId = rootNodeElement.dataset.nodeId;
+                highlightElement = columnBody;
+            } else {
+                return;
+            }
+        } else if (addZone) {
+            targetNodeId = null;
+            highlightElement = addZone;
+        } else if (fixedZone) {
+            targetNodeId = null;
+            highlightElement = fixedZone;
+        } else if (columnsContainer) {
+            targetNodeId = null;
+            highlightElement = columnsContainer;
+        }
+
+        // 移除高亮
+        if (highlightElement) {
+            highlightElement.classList.remove('drag-over');
+            highlightElement.classList.remove('drag-over-left');
+            highlightElement.classList.remove('drag-over-right');
+        }
+
+        console.log('放置:', draggedNodeId, '到', targetNodeId, 'Index:', newIndex);
+
+        // [FIX] 在執行移動和重新渲染之前，先移除容器的拖曳狀態
+        // 因為重新渲染會破壞 DOM，導致 dragend 事件可能無法正確冒泡或觸發
+        DOM.sceneTreeContainer.classList.remove('is-dragging');
+        document.querySelectorAll('.drag-over, .drag-over-left, .drag-over-right').forEach(el => {
+            el.classList.remove('drag-over');
+            el.classList.remove('drag-over-left');
+            el.classList.remove('drag-over-right');
+        });
+
+        // 執行移動
+        const success = SceneMapManager.moveItem(draggedNodeId, targetNodeId, newIndex);
+
+        if (success) {
+            // [NEW] 如果移動到根節點，確保它是展開的，這樣使用者才能看到子節點
+            if (!targetNodeId) {
+                tempState.collapsedSceneNodes.delete(draggedNodeId);
+            }
+
+            // 暫存節點名稱（在重新渲染前）
+            const sceneMap = SceneMapManager.getActiveSceneMap();
+            const draggedNode = sceneMap.nodes[draggedNodeId];
+            const targetNode = targetNodeId ? sceneMap.nodes[targetNodeId] : null;
+            const draggedName = draggedNode.name;
+            const targetName = targetNode ? targetNode.name : '根層級';
+
+            // 重新渲染場景樹
+            UI.renderSceneTree();
+
+            // 顯示成功提示
+            console.log(`✅ 已將「${draggedName}」移動到「${targetName}」`);
+        } else {
+            alert('移動失敗！無法移動到選定的位置。');
+        }
+
+        draggedNodeId = null;
+    });
+
+    console.log('✅ 拖放功能已啟用');
+}
+
+/**
+ * [NEW] 設置場景地圖的拖曳捲動 (Panning)
+ */
+function setupSceneMapPanning() {
+    const container = DOM.sceneTreeContainer;
+    if (!container) return;
+
+    let isPanning = false;
+    let startX;
+    let scrollLeft;
+
+    container.addEventListener('mousedown', (e) => {
+        // 如果點擊的是節點或其子元素，不觸發 Panning
+        if (e.target.closest('.scene-node-content') || e.target.closest('.scene-column-body')) return;
+
+        isPanning = true;
+        container.classList.add('panning');
+        startX = e.pageX - container.offsetLeft;
+        scrollLeft = container.scrollLeft;
+    });
+
+    container.addEventListener('mouseleave', () => {
+        isPanning = false;
+        container.classList.remove('panning');
+    });
+
+    container.addEventListener('mouseup', () => {
+        isPanning = false;
+        container.classList.remove('panning');
+    });
+
+    container.addEventListener('mousemove', (e) => {
+        if (!isPanning) return;
+        e.preventDefault();
+        const x = e.pageX - container.offsetLeft;
+        const walk = (x - startX) * 1.5; // 捲動速度倍率
+        container.scrollLeft = scrollLeft - walk;
+    });
 }
 

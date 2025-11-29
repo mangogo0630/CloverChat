@@ -1,12 +1,12 @@
 // service-worker.js
 
-// 版本號:每次您更新網站的任何核心檔案時,請務必將此版本號 +1
-// 例如:'ice-chat-cache-v2', 'ice-chat-cache-v3' ...
-const CACHE_NAME = 'ice-chat-cache-v5.2.2';
+// 版本號：每次您更新網站的任何核心檔案時，請務必將此版本號 +1
+// 例如：'ice-chat-cache-v2', 'ice-chat-cache-v3' ...
+const CACHE_NAME = 'ice-chat-cache-v5.2.5';
 
 // 需要被快取的核心檔案列表
 const urlsToCache = [
-  './', // 快取根目錄,通常是 index.html
+  './', // 快取根目錄，通常是 index.html
   './index.html',
   './manifest.json',
   './style.css',
@@ -19,6 +19,7 @@ const urlsToCache = [
   './js/handlers.js',
   './js/lorebookManager.js',
   './js/promptManager.js',
+  './js/sceneMapManager.js',
   './js/state.js',
   './js/ui.js',
   './js/utils.js',
@@ -48,14 +49,14 @@ self.addEventListener('install', event => {
         return cache.addAll(urlsToCache);
       })
       .catch(error => {
-        // 新增:如果 cache.addAll 失敗,在控制台清楚地顯示錯誤
+        // 新增：如果 cache.addAll 失敗，在控制台清楚地顯示錯誤
         // 這有助於快速定位是哪個檔案路徑錯誤或無法存取
-        console.error('Service Worker 安裝失敗:無法快取所有資源。', error);
+        console.error('Service Worker 安裝失敗：無法快取所有資源。', error);
       })
   );
 });
 
-// 2. 攔截網路請求,從快取提供資源 (改良版)
+// 2. 攔截網路請求，從快取提供資源 (改良版)
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
@@ -67,8 +68,8 @@ self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(event.request)
       .then(response => {
-        // 如果快取中有對應的回應,就直接回傳,否則從網路請求
-        // 這個 fetch 在離線時會失敗,這是預期行為,錯誤訊息代表該資源未被成功快取。
+        // 如果快取中有對應的回應，就直接回傳，否則從網路請求
+        // 這個 fetch 在離線時會失敗，這是預期行為，錯誤訊息代表該資源未被成功快取。
         return response || fetch(event.request);
       })
   );
@@ -81,7 +82,7 @@ self.addEventListener('activate', event => {
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.map(cacheName => {
-          // 如果快取名稱不在白名單中,就刪除它
+          // 如果快取名稱不在白名單中，就刪除它
           if (cacheWhitelist.indexOf(cacheName) === -1) {
             console.log('Deleting old cache:', cacheName);
             return caches.delete(cacheName);
@@ -92,9 +93,10 @@ self.addEventListener('activate', event => {
   );
 });
 
-// 4. 監聽來自客戶端的訊息,以觸發 skipWaiting
+// 4. 監聽來自客戶端的訊息，以觸發 skipWaiting
 self.addEventListener('message', event => {
   if (event.data && event.data.action === 'skipWaiting') {
     self.skipWaiting();
   }
 });
+

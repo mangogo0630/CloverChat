@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,7 +9,7 @@
     <!-- Theme Initializer Script -->
     <!-- 這段程式碼會在頁面渲染前執行，以避免主題閃爍 -->
     <script>
-        (function() {
+        (function () {
             try {
                 const theme = localStorage.getItem('theme');
                 if (theme) {
@@ -37,6 +38,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.5/purify.min.js"></script>
 </head>
+
 <body>
 
     <div class="app-container">
@@ -48,7 +50,8 @@
                     <header class="panel-header">
                         <h2>角色列表</h2>
                         <div class="header-actions">
-                            <button id="global-settings-btn" class="icon-btn" title="全域設定"><i class="fa-solid fa-gear"></i></button>
+                            <button id="global-settings-btn" class="icon-btn" title="全域設定"><i
+                                    class="fa-solid fa-gear"></i></button>
                         </div>
                     </header>
                     <ul id="character-list" class="character-list"></ul>
@@ -59,7 +62,8 @@
                 <!-- 聊天室列表視圖 -->
                 <div id="chat-session-view" class="panel-view">
                     <header class="panel-header">
-                        <button id="back-to-chars-btn" class="icon-btn" title="返回角色列表"><i class="fa-solid fa-arrow-left"></i></button>
+                        <button id="back-to-chars-btn" class="icon-btn" title="返回角色列表"><i
+                                class="fa-solid fa-arrow-left"></i></button>
                         <div class="chat-list-header-title">
                             <button id="header-love-char-btn" class="icon-btn-sm" title="喜愛/取消喜愛">
                                 <i class="fa-regular fa-heart"></i>
@@ -67,8 +71,10 @@
                             <h2 id="chat-list-header-name"></h2>
                         </div>
                         <div class="header-actions">
-                            <button id="edit-active-character-btn" class="icon-btn" title="編輯角色"><i class="fa-solid fa-pencil"></i></button>
-                            <button id="delete-active-character-btn" class="icon-btn" title="刪除角色"><i class="fa-solid fa-trash"></i></button>
+                            <button id="edit-active-character-btn" class="icon-btn" title="編輯角色"><i
+                                    class="fa-solid fa-pencil"></i></button>
+                            <button id="delete-active-character-btn" class="icon-btn" title="刪除角色"><i
+                                    class="fa-solid fa-trash"></i></button>
                         </div>
                     </header>
                     <ul id="chat-session-list" class="chat-session-list"></ul>
@@ -81,7 +87,7 @@
 
         <!-- ==================== 右側主聊天面板 ==================== -->
         <main class="chat-panel">
-             <button id="menu-toggle-btn" class="icon-btn menu-toggle-btn"><i class="fa-solid fa-bars"></i></button>
+            <button id="menu-toggle-btn" class="icon-btn menu-toggle-btn"><i class="fa-solid fa-bars"></i></button>
             <!-- 初始歡迎畫面 -->
             <div id="welcome-screen" class="welcome-screen">
                 <i class="fa-solid fa-comments"></i>
@@ -95,11 +101,11 @@
                     <div class="char-info">
                         <img id="chat-header-avatar" src="" alt="頭像" class="chat-avatar-sm">
                         <div class="char-info-details">
-                           <div class="chat-header-name-container">
-                               <h2 id="chat-header-name"></h2>
-                               <span id="chat-header-model-name"></span>
-                           </div>
-                           <input type="text" id="chat-notes-input" class="chat-notes-input" placeholder="新增備註...">
+                            <div class="chat-header-name-container">
+                                <h2 id="chat-header-name"></h2>
+                                <span id="chat-header-model-name"></span>
+                            </div>
+                            <input type="text" id="chat-notes-input" class="chat-notes-input" placeholder="新增備註...">
                         </div>
                     </div>
                     <div class="chat-actions">
@@ -112,9 +118,14 @@
                                 <i class="fa-solid fa-ellipsis-vertical"></i>
                             </button>
                             <div id="chat-options-menu" class="dropdown-menu hidden">
-                                <button id="import-chat-option-btn"><i class="fa-solid fa-file-import"></i> 匯入聊天紀錄</button>
-                                <button id="export-chat-option-btn"><i class="fa-solid fa-file-export"></i> 匯出聊天紀錄</button>
-                                <button id="delete-chat-option-btn" class="danger"><i class="fa-solid fa-trash-can"></i> 刪除聊天室</button>
+                                <button id="import-chat-option-btn"><i class="fa-solid fa-file-import"></i>
+                                    匯入聊天紀錄</button>
+                                <button id="export-chat-option-btn"><i class="fa-solid fa-file-export"></i>
+                                    匯出聊天紀錄</button>
+                                <button id="view-prompt-option-btn"><i class="fa-solid fa-code"></i>
+                                    檢視 Prompt</button>
+                                <button id="delete-chat-option-btn" class="danger"><i class="fa-solid fa-trash-can"></i>
+                                    刪除聊天室</button>
                             </div>
                         </div>
                     </div>
@@ -126,8 +137,9 @@
 
                 <div class="input-area">
                     <div class="input-actions">
-                         <button id="view-memory-btn" class="action-btn-sm">查看/編輯記憶</button>
-                         <button id="update-memory-btn" class="action-btn-sm">更新記憶</button>
+                        <button id="view-memory-btn" class="action-btn-sm">查看/編輯記憶</button>
+                        <button id="update-memory-btn" class="action-btn-sm">更新記憶</button>
+                        <button id="view-scene-btn" class="action-btn-sm">查看/編輯場景</button>
                     </div>
                     <div class="message-input-container">
                         <textarea id="message-input" placeholder="在這裡輸入訊息..." rows="1"></textarea>
@@ -173,12 +185,13 @@
             <div class="modal-body">
                 <label for="char-avatar-upload" class="avatar-upload-label">
                     <div class="avatar-preview-container">
-                        <img id="char-avatar-preview" src="https://placehold.co/100x100/EFEFEF/AAAAAA?text=頭像" alt="角色頭像預覽" class="avatar-preview">
+                        <img id="char-avatar-preview" src="https://placehold.co/100x100/EFEFEF/AAAAAA?text=頭像"
+                            alt="角色頭像預覽" class="avatar-preview">
                         <div class="avatar-upload-overlay"><i class="fa-solid fa-camera"></i></div>
                     </div>
                 </label>
                 <input type="file" id="char-avatar-upload" class="avatar-upload-input" accept="image/*">
-                
+
                 <div class="form-group">
                     <label for="char-name">角色名稱</label>
                     <input type="text" id="char-name" placeholder="角色名稱">
@@ -187,7 +200,7 @@
                     <label for="char-description">角色描述 (性格、背景)</label>
                     <textarea id="char-description" placeholder="角色描述 (性格、背景)"></textarea>
                 </div>
-                
+
                 <div class="form-group">
                     <label>第一句話 (開場白)</label>
                     <div id="first-message-list" class="first-message-container">
@@ -197,17 +210,17 @@
                     </button>
                 </div>
 
-                 <div class="form-group">
+                <div class="form-group">
                     <label for="char-example-dialogue">對話範例</label>
                     <textarea id="char-example-dialogue" placeholder="格式: {{user}}: 你好\n{{char}}: 你好呀"></textarea>
                 </div>
-                
-                 <!-- Advanced Metadata Section -->
+
+                <!-- Advanced Metadata Section -->
                 <div class="advanced-section">
                     <div class="advanced-section-header">
                         <h4>
                             <i class="fa-solid fa-wand-magic-sparkles"></i>
-                            進階定義 
+                            進階定義
                         </h4>
                         <i class="fa-solid fa-chevron-down"></i>
                     </div>
@@ -247,15 +260,21 @@
         <div class="modal-content">
             <h2>全域設定</h2>
             <div id="settings-tabs-container" class="settings-tabs">
-                <button class="tab-btn active" data-tab="account-tab"><i class="fa-solid fa-user-circle"></i> 帳號</button>
+                <button class="tab-btn active" data-tab="account-tab"><i class="fa-solid fa-user-circle"></i>
+                    帳號</button>
                 <button class="tab-btn" data-tab="api-settings-tab"><i class="fa-solid fa-key"></i> API 設定</button>
                 <button class="tab-btn" data-tab="user-settings-tab"><i class="fa-solid fa-users"></i> 使用者設定</button>
-                <button class="tab-btn" data-tab="prompt-settings-tab"><i class="fa-solid fa-book-bookmark"></i> 提示詞庫</button>
+                <button class="tab-btn" data-tab="prompt-settings-tab"><i class="fa-solid fa-book-bookmark"></i>
+                    提示詞庫</button>
                 <button class="tab-btn" data-tab="lorebook-tab"><i class="fa-solid fa-book"></i> 世界書</button>
-                <button class="tab-btn" data-tab="regex-tab"><i class="fa-solid fa-wand-magic-sparkles"></i> 正規表達式</button>
+                <button class="tab-btn" data-tab="regex-tab"><i class="fa-solid fa-wand-magic-sparkles"></i>
+                    正規表達式</button>
+                <button class="tab-btn" data-tab="scene-keyword-tab"><i class="fa-solid fa-map-location-dot"></i>
+                    場景關鍵字</button>
                 <button class="tab-btn" data-tab="theme-settings-tab"><i class="fa-solid fa-palette"></i> 主題設定</button>
                 <button class="tab-btn" data-tab="about-tab"><i class="fa-solid fa-info-circle"></i> 關於</button>
-                <button class="tab-btn" data-tab="data-management-tab"><i class="fa-solid fa-database"></i> 資料管理</button>
+                <button class="tab-btn" data-tab="data-management-tab"><i class="fa-solid fa-database"></i>
+                    資料管理</button>
             </div>
             <div class="modal-body">
                 <!-- 帳號分頁 -->
@@ -283,11 +302,13 @@
                             <select id="api-preset-select">
                                 <option value="">選擇要載入的設定檔...</option>
                             </select>
-                            <button id="delete-api-preset-btn" class="icon-btn-sm danger" title="刪除選取的設定檔"><i class="fa-solid fa-trash"></i></button>
+                            <button id="delete-api-preset-btn" class="icon-btn-sm danger" title="刪除選取的設定檔"><i
+                                    class="fa-solid fa-trash"></i></button>
                         </div>
-                        <button id="save-api-preset-btn" class="action-btn-sm"><i class="fa-solid fa-save"></i> 儲存目前設定為新設定檔</button>
+                        <button id="save-api-preset-btn" class="action-btn-sm"><i class="fa-solid fa-save"></i>
+                            儲存目前設定為新設定檔</button>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="api-provider">API 供應商</label>
                         <select id="api-provider">
@@ -322,7 +343,7 @@
                         </div>
                         <small class="setting-description">數值越高，AI 回應越隨機、有創意；越低則越穩定、保守。</small>
                     </div>
-                     <div class="form-group">
+                    <div class="form-group">
                         <div class="settings-slider-group">
                             <label for="top-p-slider">Top P</label>
                             <input type="range" id="top-p-slider" min="0" max="1" step="0.01">
@@ -334,21 +355,24 @@
                         <div class="settings-slider-group">
                             <label for="repetition-penalty-slider">重複懲罰</label>
                             <input type="range" id="repetition-penalty-slider" min="0" max="2" step="0.01">
-                            <input type="number" id="repetition-penalty-value" class="slider-value" min="0" max="2" step="0.01">
+                            <input type="number" id="repetition-penalty-value" class="slider-value" min="0" max="2"
+                                step="0.01">
                         </div>
-                         <small class="setting-description">數值越高，越能避免 AI 重複說過的話，有助於保持對話新鮮感。</small>
+                        <small class="setting-description">數值越高，越能避免 AI 重複說過的話，有助於保持對話新鮮感。</small>
                     </div>
                     <div class="form-group">
                         <div class="settings-slider-group">
                             <label for="context-size-input">上下文大小</label>
-                            <input type="number" id="context-size-input" class="slider-value" min="512" max="100000" step="256" placeholder="例如: 30000">
+                            <input type="number" id="context-size-input" class="slider-value" min="512" max="100000"
+                                step="256" placeholder="例如: 30000">
                         </div>
                         <small class="setting-description">AI 能「記住」的對話長度(Token)。越高記憶越好，但花費也越高。</small>
                     </div>
-                     <div class="form-group">
+                    <div class="form-group">
                         <div class="settings-slider-group">
                             <label for="max-tokens-value">最大回應</label>
-                            <input type="number" id="max-tokens-value" class="slider-value" min="50" max="128000" step="1" placeholder="例如: 4096">
+                            <input type="number" id="max-tokens-value" class="slider-value" min="50" max="128000"
+                                step="1" placeholder="例如: 4096">
                         </div>
                         <small class="setting-description">限制 AI 單次回應的長度(Token)。過低可能導致回應被截斷。</small>
                     </div>
@@ -356,7 +380,8 @@
                     <div class="form-group">
                         <div class="settings-slider-group">
                             <label for="summarization-max-tokens-value">摘要長度上限</label>
-                            <input type="number" id="summarization-max-tokens-value" class="slider-value" min="100" max="128000" step="100" placeholder="例如: 1000">
+                            <input type="number" id="summarization-max-tokens-value" class="slider-value" min="100"
+                                max="128000" step="100" placeholder="例如: 1000">
                         </div>
                         <small class="setting-description">限制「更新記憶」時生成的摘要長度。若您的對話紀錄很長，建議調高此數值 (預設 1000)。</small>
                     </div>
@@ -372,7 +397,8 @@
                         <ul id="user-persona-list" class="persona-list">
                         </ul>
                     </div>
-                    <button id="add-user-persona-btn" class="action-btn-sm"><i class="fa-solid fa-plus"></i> 新增角色</button>
+                    <button id="add-user-persona-btn" class="action-btn-sm"><i class="fa-solid fa-plus"></i>
+                        新增角色</button>
                 </div>
                 <!-- 提示詞庫分頁 -->
                 <div id="prompt-settings-tab" class="tab-content">
@@ -380,12 +406,16 @@
                         <h4>提示詞設定檔</h4>
                         <div class="preset-controls">
                             <select id="prompt-set-select"></select>
-                            <button id="exportPromptSetBtn" class="icon-btn-sm" title="匯出選取的設定檔"><i class="fa-solid fa-download"></i></button>
-                            <button id="delete-prompt-set-btn" class="icon-btn-sm danger" title="刪除選取的設定檔"><i class="fa-solid fa-trash"></i></button>
+                            <button id="exportPromptSetBtn" class="icon-btn-sm" title="匯出選取的設定檔"><i
+                                    class="fa-solid fa-download"></i></button>
+                            <button id="delete-prompt-set-btn" class="icon-btn-sm danger" title="刪除選取的設定檔"><i
+                                    class="fa-solid fa-trash"></i></button>
                         </div>
                         <div class="modal-actions-split" style="margin-top: 10px;">
-                           <button id="addPromptSetBtn" class="action-btn-sm"><i class="fa-solid fa-plus"></i> 新增</button>
-                           <button id="importPromptSetBtn" class="action-btn-sm"><i class="fa-solid fa-upload"></i> 匯入</button>
+                            <button id="addPromptSetBtn" class="action-btn-sm"><i class="fa-solid fa-plus"></i>
+                                新增</button>
+                            <button id="importPromptSetBtn" class="action-btn-sm"><i class="fa-solid fa-upload"></i>
+                                匯入</button>
                         </div>
                     </div>
                     <div id="prompt-list-container">
@@ -407,16 +437,18 @@
                     <h3>世界書管理</h3>
                     <p class="setting-description">您可以在此管理多個世界書，並啟用任意數量以在對話中使用。</p>
                     <div id="lorebook-list-container">
-                         <ul id="lorebook-list" class="lorebook-list">
+                        <ul id="lorebook-list" class="lorebook-list">
                             <!-- 世界書列表會動態生成於此 -->
-                         </ul>
+                        </ul>
                     </div>
                     <div class="modal-actions-split" style="margin-top: 15px;">
-                       <button id="add-lorebook-btn" class="action-btn-sm"><i class="fa-solid fa-plus"></i> 新增世界書</button>
-                       <button id="import-lorebook-btn" class="action-btn-sm"><i class="fa-solid fa-upload"></i> 匯入世界書</button>
+                        <button id="add-lorebook-btn" class="action-btn-sm"><i class="fa-solid fa-plus"></i>
+                            新增世界書</button>
+                        <button id="import-lorebook-btn" class="action-btn-sm"><i class="fa-solid fa-upload"></i>
+                            匯入世界書</button>
                     </div>
                 </div>
-                
+
                 <!-- 正規表達式分頁 -->
                 <div id="regex-tab" class="tab-content">
                     <h3>正規表達式 (輸出過濾)</h3>
@@ -427,6 +459,32 @@
                         <i class="fa-solid fa-plus"></i> 新增規則
                     </button>
                 </div>
+                <!-- 場景關鍵字映射分頁 -->
+                <div id="scene-keyword-tab" class="tab-content">
+                    <h3>場景關鍵字映射管理</h3>
+                    <p class="setting-description">設定對話關鍵字與場景節點的對應關係，讓 AI 能自動偵測相關場景。</p>
+
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="enable-ai-scene-analysis">
+                            啟用 AI 輔助場景分析（在對話後自動建議場景更新）
+                        </label>
+                    </div>
+
+                    <h4>關鍵字列表</h4>
+                    <div id="keyword-mapping-list" class="keyword-mapping-list">
+                        <!-- 關鍵字映射列表會動態生成 -->
+                    </div>
+                    <div class="modal-actions-split" style="margin-top: 15px;">
+                        <button id="add-keyword-mapping-btn" class="action-btn-sm">
+                            <i class="fa-solid fa-plus"></i> 新增關鍵字
+                        </button>
+                        <button id="reset-keyword-mappings-btn" class="action-btn-sm">
+                            <i class="fa-solid fa-rotate"></i> 重置為預設
+                        </button>
+                    </div>
+                </div>
+
                 <!-- 主題設定分頁內容 -->
                 <div id="theme-settings-tab" class="tab-content">
                     <h3>主題設定</h3>
@@ -466,34 +524,42 @@
                             <p>歡迎使用 幸運草（以下簡稱「本服務」）！</p>
                             <p>在您開始與 AI 互動前，請詳細閱讀以下條款。本「服務條款與免責聲明」（以下簡稱「本條款」）構成您與本服務開發者之間的有效法律協議。</p>
                             <p>當您註冊、登入或以任何方式使用本服務時，即表示您已詳閱、理解並完全同意接受本條款的所有內容。若您不同意，請勿使用本服務。</p>
-                            
+
                             <h6>第一條：服務性質與內容警告</h6>
-                            <p><strong>虛構性質：</strong>本服務提供與 AI 虛擬角色的互動體驗。所有角色、對話、情節、觀點與資訊皆為演算法生成的純屬虛構產物，不代表任何真實人物、實體或事件，亦不保證其準確性、完整性或適當性。</p>
-                            <p><strong>成人內容 (NSFW)：</strong>本服務包含成人導向的內容，其設計僅為娛樂目的。請務必將所有互動內容視為虛構，切勿將其與現實世界混淆或作為現實生活的指導。</p>
+                            <p><strong>虛構性質：</strong>本服務提供與 AI
+                                虛擬角色的互動體驗。所有角色、對話、情節、觀點與資訊皆為演算法生成的純屬虛構產物，不代表任何真實人物、實體或事件，亦不保證其準確性、完整性或適當性。</p>
+                            <p><strong>成人內容 (NSFW)：</strong>本服務包含成人導向的內容，其設計僅為娛樂目的。請務必將所有互動內容視為虛構，切勿將其與現實世界混淆或作為現實生活的指導。
+                            </p>
 
                             <h6>第二條：使用者資格與年齡限制</h6>
                             <p>本服務僅供達到您所在司法管轄區法定成年年齡（通常為18歲或以上）的使用者。</p>
-                            <p>您在此聲明並保證，您已達到法定成年年齡，並具備完全的法律權利與能力來接受本條款。若您未滿法定成年年齡，您必須立即停止使用本服務。開發者保留要求驗證年齡及終止任何開發者懷疑為未成年使用者帳戶的權利。</p>
-                            
+                            <p>您在此聲明並保證，您已達到法定成年年齡，並具備完全的法律權利與能力來接受本條款。若您未滿法定成年年齡，您必須立即停止使用本服務。開發者保留要求驗證年齡及終止任何開發者懷疑為未成年使用者帳戶的權利。
+                            </p>
+
                             <h6>第三條：使用者行為準則</h6>
                             <p>您同意對您在本服務中的所有行為以及您所生成的內容負全部責任。您承諾絕不利用本服務從事、生成、誘導或傳播以下任何性質的內容：</p>
                             <ul>
                                 <li><strong>兒童剝削：</strong>任何與兒童色情、性虐待、引誘或剝削相關的圖像、文字或意圖。此為絕對紅線，對此類內容零容忍。</li>
                                 <li><strong>非法活動：</strong>教唆、協助或推廣任何違反您所在地法律的行為，包括但不限於詐騙、製造違禁品、非法交易等。</li>
-                                <li><strong>真實傷害與暴力：</strong>威脅、煽動或美化針對任何真實個人或群體的暴力、恐怖主義、自殘或自殺行為。此條款不限制純屬虛構情節的描述，但嚴禁將本服務用於策劃或鼓勵現實世界的傷害。</li>
+                                <li><strong>真實傷害與暴力：</strong>威脅、煽動或美化針對任何真實個人或群體的暴力、恐怖主義、自殘或自殺行為。此條款不限制純屬虛構情節的描述，但嚴禁將本服務用於策劃或鼓勵現實世界的傷害。
+                                </li>
                                 <li><strong>仇恨言論：</strong>基於種族、國籍、宗教、性別、性取向、殘疾或任何其他受保護特徵的歧視、騷擾、誹謗或煽動仇恨。</li>
                                 <li><strong>侵犯隱私：</strong>分享、發布或索取他人的非公開個人資訊（如姓名、地址、電話、身分證號碼等）。</li>
                             </ul>
 
                             <h6>第四條：免責聲明與責任限制</h6>
-                            <p><strong>按「現狀」提供：</strong>本服務乃依「現狀」及「現有」基礎提供。開發者不對服務的穩定性、可靠性、準確性、安全性或持續可用性做出任何明示或暗示的保證。</p>
-                            <p><strong>內容免責：</strong>您明確理解並同意，AI 生成的內容可能無法預測、不準確或可能令您感到不快。本服務開發者對 AI 產出的任何資訊、言論、建議或情節，不承擔任何形式的保證或法律責任。</p>
+                            <p><strong>按「現狀」提供：</strong>本服務乃依「現狀」及「現有」基礎提供。開發者不對服務的穩定性、可靠性、準確性、安全性或持續可用性做出任何明示或暗示的保證。
+                            </p>
+                            <p><strong>內容免責：</strong>您明確理解並同意，AI 生成的內容可能無法預測、不準確或可能令您感到不快。本服務開發者對 AI
+                                產出的任何資訊、言論、建議或情節，不承擔任何形式的保證或法律責任。</p>
                             <p><strong>非專業建議：</strong>本服務的所有內容均不構成且不能替代專業的醫療、法律、財務、心理或任何其他領域的建議。您不應依賴本服務的內容做出任何重大決策。</p>
-                            <p><strong>責任限制：</strong>在法律允許的最大範圍內，本服務開發者不對任何因您使用或無法使用本服務而導致的任何直接、間接、附帶、特殊或懲罰性損害（包括但不限於資料損失、利潤損失或商譽損失）承擔責任。</p>
+                            <p><strong>責任限制：</strong>在法律允許的最大範圍內，本服務開發者不對任何因您使用或無法使用本服務而導致的任何直接、間接、附帶、特殊或懲罰性損害（包括但不限於資料損失、利潤損失或商譽損失）承擔責任。
+                            </p>
 
                             <h6>第五條：服務的中止與終止</h6>
-                            <p>若開發者單方面認定您已違反本條款的任何規定，特別是第三條的「使用者行為準則」，開發者保留權利，可不經事先通知，隨時暫停、限制或永久終止您對本服務的全部或部分存取權限，且無需對您或任何第三方承擔責任。</p>
-                            
+                            <p>若開發者單方面認定您已違反本條款的任何規定，特別是第三條的「使用者行為準則」，開發者保留權利，可不經事先通知，隨時暫停、限制或永久終止您對本服務的全部或部分存取權限，且無需對您或任何第三方承擔責任。
+                            </p>
+
                             <h6>第六條：條款變更</h6>
                             <p>開發者可能隨時修訂本條款。任何變更將於本應用程式內公布時立即生效。您在條款變更後繼續使用本服務，將被視為已閱讀、理解並接受修訂後的條款。建議您定期查看本條款。</p>
                         </div>
@@ -504,8 +570,10 @@
                     <h3>備份與還原</h3>
                     <p>您可以將所有角色、對話紀錄和設定匯出成一個單一的備份檔案。之後可以在任何裝置上匯入此檔案來還原您的資料。</p>
                     <div class="modal-actions-split">
-                        <button id="global-export-btn" class="action-btn"><i class="fa-solid fa-download"></i> 匯出所有資料</button>
-                        <button id="open-import-options-btn" class="action-btn"><i class="fa-solid fa-upload"></i> 匯入備份檔案</button>
+                        <button id="global-export-btn" class="action-btn"><i class="fa-solid fa-download"></i>
+                            匯出所有資料</button>
+                        <button id="open-import-options-btn" class="action-btn"><i class="fa-solid fa-upload"></i>
+                            匯入備份檔案</button>
                     </div>
                 </div>
             </div>
@@ -569,7 +637,8 @@
             <div class="modal-body">
                 <label for="user-persona-avatar-upload" class="avatar-upload-label">
                     <div class="avatar-preview-container">
-                        <img id="user-persona-avatar-preview" src="https://placehold.co/100x100/EFEFEF/AAAAAA?text=頭像" alt="使用者角色頭像預覽" class="avatar-preview">
+                        <img id="user-persona-avatar-preview" src="https://placehold.co/100x100/EFEFEF/AAAAAA?text=頭像"
+                            alt="使用者角色頭像預覽" class="avatar-preview">
                         <div class="avatar-upload-overlay"><i class="fa-solid fa-camera"></i></div>
                     </div>
                 </label>
@@ -599,7 +668,8 @@
                 <div id="memory-markdown-preview" class="markdown-preview hidden"></div>
             </div>
             <div class="modal-footer">
-                <button id="toggle-memory-preview-btn" class="action-btn secondary toggle-preview-btn"><i class="fa-solid fa-eye"></i> 預覽 Markdown</button>
+                <button id="toggle-memory-preview-btn" class="action-btn secondary toggle-preview-btn"><i
+                        class="fa-solid fa-eye"></i> 預覽 Markdown</button>
                 <button id="cancel-memory-editor-btn" class="action-btn secondary">取消</button>
                 <button id="save-memory-editor-btn" class="action-btn primary">儲存</button>
             </div>
@@ -612,7 +682,8 @@
             <div id="login-view">
                 <h2>登入</h2>
                 <div class="modal-body">
-                    <button id="google-login-btn" class="action-btn social-btn"><i class="fa-brands fa-google"></i> 使用 Google 登入</button>
+                    <button id="google-login-btn" class="action-btn social-btn"><i class="fa-brands fa-google"></i> 使用
+                        Google 登入</button>
                     <div class="divider">或</div>
                     <form id="login-form">
                         <div class="form-group">
@@ -630,9 +701,9 @@
             </div>
             <!-- 註冊視圖 -->
             <div id="register-view" class="hidden">
-                 <h2>註冊</h2>
+                <h2>註冊</h2>
                 <div class="modal-body">
-                     <form id="register-form">
+                    <form id="register-form">
                         <div class="form-group">
                             <label for="register-name">您的名稱</label>
                             <input type="text" id="register-name" name="name" required>
@@ -655,7 +726,7 @@
             </div>
         </div>
     </div>
-    
+
     <div id="prompt-editor-modal" class="modal-overlay hidden">
         <div class="modal-content">
             <h2 id="prompt-editor-title">編輯提示詞</h2>
@@ -664,7 +735,7 @@
                     <label for="prompt-editor-name">提示詞名稱</label>
                     <input type="text" id="prompt-editor-name">
                 </div>
-                 <div class="form-group">
+                <div class="form-group">
                     <label for="prompt-editor-position">位置</label>
                     <select id="prompt-editor-position">
                         <option value="chat">聊天中的提示詞管理</option>
@@ -713,7 +784,7 @@
                     <ul id="lorebook-entry-list" class="prompt-item-list"></ul>
                 </div>
                 <div class="modal-actions-split" style="margin-top: 15px;">
-                     <button id="add-lorebook-entry-btn" class="action-btn-sm">
+                    <button id="add-lorebook-entry-btn" class="action-btn-sm">
                         <i class="fa-solid fa-plus"></i> 新增條目
                     </button>
                     <button id="export-single-lorebook-btn" class="action-btn-sm" title="匯出此世界書">
@@ -740,7 +811,7 @@
                     <label for="lorebook-entry-keywords">主要關鍵字 (以逗號分隔)</label>
                     <textarea id="lorebook-entry-keywords" rows="2" placeholder="魔法,學校,校園"></textarea>
                 </div>
-                 <div class="form-group">
+                <div class="form-group">
                     <label for="lorebook-entry-secondary-keywords">次要關鍵字 (以逗號分隔)</label>
                     <textarea id="lorebook-entry-secondary-keywords" rows="2" placeholder="選填，用於反向邏輯"></textarea>
                 </div>
@@ -763,7 +834,7 @@
                                     <option value="constant">恆定觸發 (藍燈)</option>
                                 </select>
                             </div>
-                             <div class="form-group">
+                            <div class="form-group">
                                 <label for="lorebook-entry-logic">關鍵字邏輯</label>
                                 <select id="lorebook-entry-logic">
                                     <option value="0">包含任一 (OR)</option>
@@ -792,7 +863,7 @@
                         </div>
                         <div class="form-group">
                             <h4>額外匹配來源</h4>
-                             <div class="checkbox-grid">
+                            <div class="checkbox-grid">
                                 <div class="checkbox-group">
                                     <input type="checkbox" id="match-char-desc">
                                     <label for="match-char-desc">角色描述</label>
@@ -801,7 +872,7 @@
                                     <input type="checkbox" id="match-scenario">
                                     <label for="match-scenario">場景設定</label>
                                 </div>
-                                 <div class="checkbox-group">
+                                <div class="checkbox-group">
                                     <input type="checkbox" id="match-creator-notes">
                                     <label for="match-creator-notes">創作者備註</label>
                                 </div>
@@ -822,6 +893,116 @@
         </div>
     </div>
 
+    <!-- 場景地圖編輯器 Modal -->
+    <div id="scene-map-editor-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header-actions">
+                <h2>場景地圖編輯器</h2>
+                <button id="close-scene-map-editor-btn-mobile" class="icon-btn close-btn-mobile" title="關閉"
+                    aria-label="關閉">
+                    <i class="fa-solid fa-times"></i>
+                </button>
+                <div class="action-buttons-group" style="display: flex; gap: 5px;">
+                    <button id="undo-session-btn" class="icon-btn warning" title="復原至進入時狀態">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                    </button>
+                    <button id="reset-scene-map-btn" class="icon-btn danger" title="完全清空場景">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-body">
+                <p class="scene-map-info">當前聊天室的場景狀態（每個聊天室獨立）</p>
+                <div id="scene-tree" class="scene-tree">
+                    <!-- 場景樹會動態生成 -->
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <div class="footer-left-actions" style="display: flex; gap: 5px; margin-right: auto;">
+                    <button id="ai-scene-analysis-btn" class="action-btn-sm">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> AI 輔助分析
+                    </button>
+                    <button id="import-scene-map-btn" class="action-btn-sm" title="匯入場景資訊">
+                        <i class="fa-solid fa-file-import"></i> 匯入
+                    </button>
+                    <button id="export-scene-map-btn" class="action-btn-sm" title="匯出場景資訊">
+                        <i class="fa-solid fa-file-export"></i> 匯出
+                    </button>
+                </div>
+                <button id="add-root-scene-node-btn" class="action-btn-sm">
+                    <i class="fa-solid fa-plus"></i> 新增根節點
+                </button>
+                <button id="close-scene-map-editor-btn" class="action-btn primary">關閉</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 場景更新確認 Modal -->
+    <div id="scene-update-confirm-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2>AI 建議的場景更新</h2>
+            <div class="modal-body">
+                <p class="scene-map-info">以下是 AI 根據對話內容建議的場景狀態變更，請勾選要套用的項目：</p>
+                <div id="scene-updates-list" class="scene-updates-list">
+                    <!-- AI 建議的變更會動態生成 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancel-scene-updates-btn" class="action-btn secondary">取消</button>
+                <button id="apply-scene-updates-btn" class="action-btn primary">套用選中的更新</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 場景節點編輯器 Modal -->
+    <div id="scene-node-editor-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2 id="scene-node-editor-title">編輯場景節點</h2>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="scene-node-name">節點名稱</label>
+                    <input type="text" id="scene-node-name" placeholder="例如：廚房、冰箱">
+                </div>
+                <div class="form-group">
+                    <label for="scene-node-type">節點類型</label>
+                    <select id="scene-node-type">
+                        <option value="location">地點 (Location)</option>
+                        <option value="container">容器 (Container)</option>
+                        <option value="item">物品 (Item)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="scene-node-description">
+                        描述（包含當前狀態）
+                        <button type="button" id="ai-suggest-description-btn" class="icon-btn-sm" title="AI 建議描述">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        </button>
+                    </label>
+                    <textarea id="scene-node-description" rows="3"
+                        placeholder="描述這個節點及其當前狀態，例如：&#10;「雙門冰箱，目前是空的，裡面很冷」"></textarea>
+                    <small class="setting-description">💡 提示：在描述中直接寫明當前狀態（如：是空的、開著、關著），比使用結構化狀態欄位更簡單易用</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="scene-node-keywords">
+                        觸發關鍵字
+                        <button type="button" id="ai-suggest-keywords-btn" class="icon-btn-sm" title="AI 建議關鍵字">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        </button>
+                    </label>
+                    <textarea id="scene-node-keywords" rows="2" placeholder="用逗號分隔，例如：海邊, 沙灘, 海, beach"></textarea>
+                    <small class="setting-description">當對話中出現這些關鍵字時，此場景會自動注入到 AI 的提示中</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="delete-scene-node-btn" class="action-btn danger" style="margin-right: auto;">刪除節點</button>
+                <button id="cancel-scene-node-editor-btn" class="action-btn secondary">取消</button>
+                <button id="save-scene-node-btn" class="action-btn primary">儲存</button>
+            </div>
+        </div>
+    </div>
 
     <!-- 刪除選項 Modal -->
     <div id="delete-options-modal" class="modal-overlay hidden">
@@ -838,13 +1019,14 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button id="cancel-delete-options-btn" class="action-btn secondary" style="margin-right: auto;">關閉</button>
+                <button id="cancel-delete-options-btn" class="action-btn secondary"
+                    style="margin-right: auto;">關閉</button>
                 <button id="delete-single-version-btn" class="action-btn primary">刪除滑動</button>
                 <button id="delete-all-versions-btn" class="action-btn danger">刪除訊息</button>
             </div>
         </div>
     </div>
-    
+
     <!-- [新增] 進階匯入選項 Modal -->
     <div id="advanced-import-modal" class="modal-overlay hidden">
         <div class="modal-content">
@@ -868,5 +1050,21 @@
     </div>
 
     <script type="module" src="js/main.js"></script>
+    <div id="view-prompt-modal" class="modal-overlay hidden">
+        <div class="modal-content large-modal">
+            <h2>檢視 Prompt</h2>
+            <div class="modal-body">
+                <p class="setting-description">這是即將發送給 AI 模型的完整 Prompt 內容 (包含系統指令、歷史紀錄與場景資訊)。</p>
+                <textarea id="view-prompt-textarea" readonly
+                    style="height: 400px; font-family: monospace; font-size: 14px;"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button id="copy-prompt-btn" class="action-btn">複製內容</button>
+                <button id="close-view-prompt-btn" class="action-btn secondary">關閉</button>
+            </div>
+        </div>
+    </div>
+
 </body>
+
 </html>
