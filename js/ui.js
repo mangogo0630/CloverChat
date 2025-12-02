@@ -165,10 +165,15 @@ export function renderChatSessionList() {
         item.className = `chat-session-item ${session.id === state.activeChatId ? 'active' : ''}`;
         item.dataset.id = session.id;
 
+        const msgCount = sessions[session.id] ? sessions[session.id].length : 0;
+
         item.innerHTML = `
             <div class="session-item-content">
                 <i class="fa-solid fa-grip-vertical drag-handle"></i>
-                <span class="session-item-name">${displayName}</span>
+                <div class="session-info-wrapper">
+                    <span class="session-item-name">${displayName}</span>
+                    <span class="msg-count" title="對話數"><i class="fa-regular fa-comments"></i> ${msgCount}</span>
+                </div>
             </div>
             <div class="session-item-actions">
                 <button class="icon-btn-sm pin-chat-btn ${session.pinned ? 'active' : ''}" title="置頂"><i class="fa-solid fa-thumbtack"></i></button>
@@ -378,6 +383,8 @@ export function loadGlobalSettingsToUI() {
     DOM.contextSizeInput.value = settings.contextSize || 30000;
     DOM.maxTokensValue.value = settings.maxTokens || 3000;
     DOM.summarizationMaxTokensValue.value = settings.summarizationMaxTokens || 1000;
+    DOM.memoryMsgCountInput.value = settings.memoryMsgCount || 50;
+    DOM.sceneMsgCountInput.value = settings.sceneMsgCount || 30;
 
     DOM.themeSelect.value = settings.theme || 'light';
     DOM.summarizationPromptInput.value = settings.summarizationPrompt || '';
@@ -757,6 +764,11 @@ export function renderSceneTree() {
     }
 
     DOM.sceneTreeContainer.innerHTML = '';
+
+    // [NEW] 初始化注入開關狀態
+    const isEnabled = sceneMap.isEnabled !== false; // 預設為 true
+    if (DOM.enableSceneInjectionDesktop) DOM.enableSceneInjectionDesktop.checked = isEnabled;
+    if (DOM.enableSceneInjectionMobile) DOM.enableSceneInjectionMobile.checked = isEnabled;
 
     // 直接渲染欄位視圖
     renderSceneColumns(sceneMap);

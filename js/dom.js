@@ -68,6 +68,8 @@ export const repetitionPenaltyValue = document.getElementById('repetition-penalt
 export const contextSizeInput = document.getElementById('context-size-input');
 export const maxTokensValue = document.getElementById('max-tokens-value');
 export const summarizationMaxTokensValue = document.getElementById('summarization-max-tokens-value');
+export const memoryMsgCountInput = document.getElementById('memory-msg-count-input');
+export const sceneMsgCountInput = document.getElementById('scene-msg-count-input');
 export const userPersonaEditorModal = document.getElementById('user-persona-editor-modal');
 export const userPersonaEditorTitle = document.getElementById('user-persona-editor-title');
 export const userPersonaAvatarUpload = document.getElementById('user-persona-avatar-upload');
@@ -230,6 +232,8 @@ export const closeSceneMapEditorBtnMobile = document.getElementById('close-scene
 export const aiSceneAnalysisBtn = document.getElementById('ai-scene-analysis-btn');
 export const exportSceneMapBtn = document.getElementById('export-scene-map-btn');
 export const importSceneMapBtn = document.getElementById('import-scene-map-btn');
+export const enableSceneInjectionDesktop = document.getElementById('enable-scene-injection-desktop');
+export const enableSceneInjectionMobile = document.getElementById('enable-scene-injection-mobile');
 
 // 場景節點編輯器
 export const sceneNodeEditorModal = document.getElementById('scene-node-editor-modal');
