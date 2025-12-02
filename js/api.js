@@ -448,9 +448,27 @@ export async function analyzeSceneChanges(chatHistory) {
         sceneSummary += `- ${nodeId} | ${path} | ${node.type} | ${desc}\n`;
     }
 
-    // 處理對話紀錄 (改為使用訊息則數限制)
-    const msgCountLimit = state.globalSettings.sceneMsgCount || 30;
-    const truncatedHistory = chatHistory.slice(-msgCountLimit);
+    // 處理對話紀錄 (參考 handleUpdateMemory 的邏輯)
+    const MAX_ANALYSIS_HISTORY_TOKENS = 20000; // 給場景分析較大的視窗
+    let tokens = 0;
+    const truncatedHistory = [];
+
+    // 從最新的訊息開始往回抓
+    for (let i = chatHistory.length - 1; i >= 0; i--) {
+        const msg = chatHistory[i];
+        const content = (msg.role === 'assistant' && Array.isArray(msg.content))
+            ? msg.content[msg.activeContentIndex || 0]
+            : msg.content;
+
+        const messageTokens = (content || '').length;
+
+        if (tokens + messageTokens > MAX_ANALYSIS_HISTORY_TOKENS) {
+            break;
+        }
+
+        tokens += messageTokens;
+        truncatedHistory.unshift(msg);
+    }
 
     // 將對話合併成文字
     const conversationSummary = truncatedHistory.map(m => {

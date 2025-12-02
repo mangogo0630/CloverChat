@@ -350,6 +350,9 @@ export function buildRelevantScenePrompt(recentMessages) {
     const sceneMap = getActiveSceneMap();
     if (!sceneMap) return '';
 
+    // [NEW] 如果場景注入被停用，直接回傳空字串
+    if (sceneMap.isEnabled === false) return '';
+
     const relevantNodeIds = getRelevantSceneNodes(recentMessages);
     if (relevantNodeIds.length === 0) return '';
 
@@ -379,6 +382,9 @@ export function buildRelevantScenePrompt(recentMessages) {
 export function buildScenePromptText(focusNodeId = null) {
     const sceneMap = getActiveSceneMap();
     if (!sceneMap) return '';
+
+    // [NEW] 如果場景注入被停用，直接回傳空字串
+    if (sceneMap.isEnabled === false) return '';
 
     const currentNode = focusNodeId
         ? sceneMap.nodes[focusNodeId]
@@ -538,6 +544,7 @@ export function deleteNode(nodeId) {
 export function createDefaultSceneMap(name = '預設場景') {
     const newSceneMap = {
         name: name,
+        isEnabled: true, // [NEW] 預設啟用
         description: '預設場景地圖',
         rootNodes: ['node_home'],
         nodes: {
@@ -647,6 +654,21 @@ export function resetKeywordMappingsToDefault() {
         '床': ['bed'],
     };
     saveSettings();
+    return true;
+}
+
+/**
+ * [NEW] 設定場景地圖是否啟用注入
+ */
+export function setSceneMapInjection(enabled) {
+    const sceneMap = getActiveSceneMap();
+    if (!sceneMap) return false;
+
+    sceneMap.isEnabled = !!enabled;
+    sceneMap.lastUpdated = new Date().toISOString();
+
+    setActiveSceneMap(sceneMap);
+    saveAllSceneStatesForChar(state.activeCharacterId);
     return true;
 }
 

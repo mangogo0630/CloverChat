@@ -956,10 +956,8 @@ export async function handleSaveGlobalSettings() {
         topP: DOM.topPValue.value,
         repetitionPenalty: DOM.repetitionPenaltyValue.value,
         contextSize: contextSize,
-        maxTokens: parseInt(DOM.maxTokensValue.value, 10) || 3000,
+        maxTokens: DOM.maxTokensValue.value,
         summarizationMaxTokens: parseInt(DOM.summarizationMaxTokensValue.value, 10) || 1000,
-        memoryMsgCount: parseInt(DOM.memoryMsgCountInput.value, 10) || 50,
-        sceneMsgCount: parseInt(DOM.sceneMsgCountInput.value, 10) || 30,
         theme: DOM.themeSelect.value,
         summarizationPrompt: DOM.summarizationPromptInput.value.trim()
     };
@@ -1707,9 +1705,25 @@ export async function handleUpdateMemory() {
     setGeneratingState(true, false);
 
     try {
-        const msgCountLimit = state.globalSettings.memoryMsgCount || 50;
-        // 直接擷取最後 N 則訊息
-        const truncatedHistory = history.slice(-msgCountLimit);
+        const MAX_SUMMARY_HISTORY_TOKENS = 28000;
+        let tokens = 0;
+        const truncatedHistory = [];
+
+        for (let i = history.length - 1; i >= 0; i--) {
+            const msg = history[i];
+            const content = (msg.role === 'assistant' && Array.isArray(msg.content))
+                ? msg.content[msg.activeContentIndex]
+                : msg.content;
+
+            const messageTokens = (content || '').length;
+
+            if (tokens + messageTokens > MAX_SUMMARY_HISTORY_TOKENS) {
+                break;
+            }
+
+            tokens += messageTokens;
+            truncatedHistory.unshift(msg);
+        }
 
         const conversationText = truncatedHistory.map(m => `${m.role}: ${m.role === 'assistant' ? m.content[m.activeContentIndex] : m.content}`).join('\n');
 

@@ -273,6 +273,17 @@ export function setupEventListeners() {
     safeAddEventListener(DOM.applySceneUpdatesBtn, 'click', Handlers.applySelectedSceneUpdates);
     safeAddEventListener(DOM.cancelSceneUpdatesBtn, 'click', Handlers.cancelSceneUpdates);
     // [NEW] 場景地圖匯入/匯出
+    const handleSceneInjectionToggle = (e) => {
+        const isChecked = e.target.checked;
+        // Sync both toggles
+        if (DOM.enableSceneInjectionDesktop) DOM.enableSceneInjectionDesktop.checked = isChecked;
+        if (DOM.enableSceneInjectionMobile) DOM.enableSceneInjectionMobile.checked = isChecked;
+        SceneMapManager.setSceneMapInjection(isChecked);
+    };
+
+    safeAddEventListener(DOM.enableSceneInjectionDesktop, 'change', handleSceneInjectionToggle);
+    safeAddEventListener(DOM.enableSceneInjectionMobile, 'change', handleSceneInjectionToggle);
+
     if (DOM.exportSceneMapBtn) {
         console.log('Binding exportSceneMapBtn');
         safeAddEventListener(DOM.exportSceneMapBtn, 'click', Handlers.handleExportSceneBtnClick);

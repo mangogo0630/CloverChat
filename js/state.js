@@ -107,16 +107,6 @@ export async function loadStateFromDB() {
         state.globalSettings.summarizationPrompt = DEFAULT_SUMMARY_PROMPT;
     }
 
-    // 初始化記憶生成讀取訊息數 (預設 50)
-    if (state.globalSettings.memoryMsgCount === undefined) {
-        state.globalSettings.memoryMsgCount = 50;
-    }
-
-    // 初始化場景分析讀取訊息數 (預設 30)
-    if (state.globalSettings.sceneMsgCount === undefined) {
-        state.globalSettings.sceneMsgCount = 30;
-    }
-
     // 初始化正規表達式規則
     if (!state.globalSettings.regexRules) {
         state.globalSettings.regexRules = [
