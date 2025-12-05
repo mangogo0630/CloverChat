@@ -2,7 +2,7 @@
 
 // 版本號：每次您更新網站的任何核心檔案時，請務必將此版本號 +1
 // 例如：'ice-chat-cache-v2', 'ice-chat-cache-v3' ...
-const CACHE_NAME = 'ice-chat-cache-v5.2.3  ';
+const CACHE_NAME = 'ice-chat-cache-v5.2.4  ';
 
 // 需要被快取的核心檔案列表
 const urlsToCache = [
